@@ -1,0 +1,22 @@
+{
+ "name": "Sổ luyện từ tiếng Trung",
+ "short_name": "Sổ luyện từ",
+ "lang": "vi",
+ "start_url": "./",
+ "scope": "./",
+ "display": "standalone",
+ "background_color": "#edf1ec",
+ "theme_color": "#0d7266",
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png"
+  }
+ ]
+}
