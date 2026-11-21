@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-180.png">
-<script>window.SOTU_STANDALONE=true;if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
+<script>window.SOTU_STANDALONE=true;window.SOTU_FB={apiKey:'AIzaSyCg6NfFwCFXr3wkazo9OIOln1-oi1xn71Q',authDomain:'so-luyen-tu.firebaseapp.com',projectId:'so-luyen-tu',storageBucket:'so-luyen-tu.firebasestorage.app',messagingSenderId:'4915154426',appId:'1:4915154426:web:d669cf6583678a81eea843'};if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
 <style>
 /* Ý tưởng: một trang vở tập viết. Giấy xanh ngọc nhạt, ô 米字格, chữ Hán vẽ bằng chính dữ liệu nét (thể Khải), một con dấu son làm điểm nhấn. Một cột, nút to cho ngón tay trên iPad. */
 :root{
@@ -182,6 +182,7 @@ textarea.bk{font:12px ui-monospace,Menlo,monospace;width:100%;border:1.5px solid
 
 <script src="lib/hanzi-writer.min.js"></script>
 <script src="lib/ts-fsrs.min.js"></script>
+<script src="lib/firebase.min.js"></script>
 <script>
 (function(){
 'use strict';
@@ -290,15 +291,16 @@ const Store = {
     try {
       for (const name of Array.from(this.dirty)){
         this.dirty.delete(name);
-        const body = JSON.parse(JSON.stringify(this.docs[name])); body.t = Date.now();
+        this.docs[name].t = Date.now(); const body = JSON.parse(JSON.stringify(this.docs[name]));
         try {
           if (this.mode === 'claude') await withTimeout(this.ref(name).set(body), 15000);
-          else localStorage.setItem('sotu:' + name, JSON.stringify(body));
+          else { localStorage.setItem('sotu:' + name, JSON.stringify(body)); if (Cloud.user) Cloud.queue.add(name); }
           this.err = null; this.lastSaved = Date.now();
         } catch (e) { this.dirty.add(name); this.err = (e && e.code) || 'lỗi'; break; }
       }
     } finally { this.saving = false; paintSync(); }
     if (this.again) { this.again = false; return this.flush(); }
+    if (Cloud.queue.size) await Cloud.push();
   }
 };
 function paintSync(){
@@ -306,13 +308,16 @@ function paintSync(){
   el.className = 'sync' + (Store.err ? ' bad' : '');
   if (Store.err) el.textContent = 'Chưa lưu được, sẽ thử lại';
   else if (Store.saving || Store.dirty.size) el.textContent = 'Đang lưu…';
-  else el.textContent = Store.mode === 'claude' ? 'Đã lưu' : 'Lưu trên máy này';
+  else if (Store.mode === 'claude') el.textContent = 'Đã lưu';
+  else if (Cloud.on && Cloud.user) { el.textContent = Cloud.busy ? 'Đang đồng bộ…' : (Cloud.err || Cloud.queue.size ? 'Chưa đồng bộ được' : 'Đã đồng bộ'); if (!Cloud.busy && (Cloud.err || Cloud.queue.size)) el.className = 'sync bad'; }
+  else el.textContent = 'Lưu trên máy này';
 }
-setInterval(() => { if (Store.err && Store.dirty.size) Store.flush(); }, 20000);
+setInterval(() => { if (Store.err && Store.dirty.size) Store.flush(); else if (Cloud.on && Cloud.user && Cloud.queue.size && !Session.on) Cloud.push(); }, 20000);
 let lastLoad = Date.now();
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') return void Store.flush();
   // quay lại sau khi rời trang: đọc lại tiến độ, phòng khi máy khác vừa học
+  if (Cloud.on && Cloud.user && !Session.on && !Store.dirty.size && !Store.saving && curView === 'home' && Date.now() - lastLoad > 60000){ lastLoad = Date.now(); Cloud.sync().then(() => { if (curView === 'home' && !Session.on) viewHome(); }); return; }
   if (Store.mode === 'claude' && !Session.on && !Store.dirty.size && !Store.saving && curView === 'home' && Date.now() - lastLoad > 60000){
     lastLoad = Date.now(); Store.loadAll().then(() => { if (curView === 'home' && !Session.on) viewHome(); }).catch(() => {});
   }
@@ -458,6 +463,7 @@ function todayLog(){ const d = dayStr(Date.now()), m = META(); return m.log[d] |
 function grade(sk, key, rating, sec){
   const now = new Date(), old = P(sk)[key];
   const card = old ? unpack(old) : F.createEmptyCard(now);
+  if (card.last_review && card.last_review > now) card.last_review = now; // thẻ xếp lớp có thể mang mốc ôn ở tương lai; chấm sớm thì coi như vừa ôn
   let lvl = old ? (old[7] || 1) : 1;
   const wasReview = !!old && old[5] === 2;
   const nc = sched.next(card, now, rating).card;
@@ -559,6 +565,7 @@ function viewHome(){
       h('td', {class:'n'}, r.pct == null ? 'chưa đủ dữ liệu' : Math.round(r.pct * 100) + '%')); });
   show('home', [
     Store.mode !== 'claude' && !STANDALONE ? h('div', {class:'banner'}, 'Tiến độ đang lưu tạm trên máy này, chưa đồng bộ giữa các máy. Mở trang trong Claude bằng tài khoản của anh để lưu lên máy chủ.') : null,
+    Cloud.on && !Cloud.user ? h('div', {class:'banner row spread'}, h('span', null, 'Chưa đăng nhập: tiến độ chỉ nằm trên máy này.'), h('button', {type:'button', class:'btn small', onclick:viewSettings}, 'Đăng nhập hoặc tạo tài khoản')) : null,
     h('div', {class:'row spread'}, h('h1', null, canStart ? 'Hôm nay có ' + dueAll + ' thẻ đến hạn' : (up.length ? 'Bắt đầu bằng lượt xếp trình độ' : 'Hôm nay không còn thẻ đến hạn')),
       sk ? h('span', {class:'pill'}, 'Chuỗi ' + sk + ' ngày') : null),
     h('div', {class:'tiles'},
@@ -1122,7 +1129,7 @@ function backupPanel(){
   const msg = h('p', {class:'muted', role:'status'});
   const enc = () => btoa(unescape(encodeURIComponent(JSON.stringify({v:1, at:new Date().toISOString(), docs:Store.docs}))));
   return h('section', {class:'panel'}, h('h2', null, 'Sao lưu tiến độ'),
-    h('p', {class:'muted'}, 'Tiến độ của bản này chỉ nằm trên máy đang dùng. Thỉnh thoảng sao chép mã sao lưu và gửi cho chính mình (ghi chú, email). Khi đổi máy, dán mã vào ô dưới rồi bấm Khôi phục.'),
+    h('p', {class:'muted'}, Store.mode === 'claude' ? 'Mã sao lưu chứa toàn bộ tiến độ. Để chuyển tiến độ sang bản web: bấm Sao chép mã ở đây, mở bản web, vào Cài đặt, dán mã vào ô này rồi bấm Khôi phục.' : (Cloud.on ? 'Mã sao lưu chứa toàn bộ tiến độ. Dùng để chuyển tiến độ từ bản khác sang (dán mã rồi bấm Khôi phục, tiến độ đang có trên máy này sẽ bị thay) hoặc để giữ một bản sao riêng.' : 'Tiến độ của bản này chỉ nằm trên máy đang dùng. Thỉnh thoảng sao chép mã sao lưu và gửi cho chính mình (ghi chú, email). Khi đổi máy, dán mã vào ô dưới rồi bấm Khôi phục.')),
     h('div', {class:'row'},
       h('button', {type:'button', class:'btn', onclick:async () => { const s = enc(); out.value = s; try { await navigator.clipboard.writeText(s); msg.textContent = 'Đã sao chép mã (' + Math.round(s.length / 1024) + ' KB).'; } catch (e) { out.select(); msg.textContent = 'Mã đã hiện trong ô. Chọn hết rồi sao chép.'; } }}, 'Sao chép mã sao lưu'),
       h('button', {type:'button', class:'btn', onclick:() => {
@@ -1134,6 +1141,106 @@ function backupPanel(){
         } catch (e) { msg.textContent = 'Mã không hợp lệ, chưa khôi phục gì.'; }
       }}, 'Khôi phục từ mã')),
     out, msg);
+}
+
+/* ================= tài khoản và đồng bộ qua Firebase (chỉ bản ngoài Claude) ================= */
+/* Tiến độ vẫn lưu trên máy trước. Khi đã đăng nhập, mỗi tài liệu được chép lên users/<uid>/docs/<tên> dạng một chuỗi JSON.
+   Hai máy cùng học thì gộp theo từng thẻ: thẻ nào ôn sau thì giữ. */
+const Cloud = {
+  on:false, user:null, auth:null, fs:null, busy:false, err:null, last:0, queue:new Set(), ready:Promise.resolve(),
+  init(){
+    const FB = window.SotuFB, cfg = window.SOTU_FB; if (!STANDALONE || !FB || !cfg || this.on) return;
+    try { const app = FB.initializeApp(cfg); this.auth = FB.getAuth(app); this.fs = FB.getFirestore(app); this.on = true; } catch (e) { return; }
+    this.ready = new Promise(res => { let first = true; FB.onAuthStateChanged(this.auth, u => { this.user = u || null; if (first) { first = false; res(); } }); setTimeout(res, 6000); });
+  },
+  owner(){ try { return localStorage.getItem('sotu:owner') || ''; } catch (e) { return ''; } },
+  ref(name){ return window.SotuFB.doc(this.fs, 'users', this.user.uid, 'docs', name); },
+  blank(name){ return name === 'meta' ? {v:1, place:{}, set:{}, log:{}, flags:[]} : {v:1, c:{}}; },
+  merge(name, a, b){ // a: trên máy, b: trên máy chủ
+    const newer = (a.t || 0) >= (b.t || 0) ? a : b, older = newer === a ? b : a, out = JSON.parse(JSON.stringify(newer));
+    if (name === 'meta'){
+      out.place = Object.assign({}, older.place || {}, newer.place || {});
+      out.log = Object.assign({}, older.log || {}); const nl = newer.log || {};
+      for (const d in nl) if (!out.log[d] || (nl[d].n || 0) >= (out.log[d].n || 0)) out.log[d] = nl[d];
+      const seen = new Set(); out.flags = (newer.flags || []).concat(older.flags || []).filter(f => f && !seen.has(f.h) && seen.add(f.h));
+      out.set = Object.assign({}, older.set || {}, newer.set || {});
+    } else {
+      const oc = older.c || {}, c = out.c = out.c || {};
+      for (const k in oc){ const x = c[k], y = oc[k]; if (!x || (y[6] || 0) > (x[6] || 0) || ((y[6] || 0) === (x[6] || 0) && (y[3] || 0) > (x[3] || 0))) c[k] = y; }
+    }
+    out.t = Math.max(a.t || 0, b.t || 0);
+    return out;
+  },
+  saveLocal(name){ try { localStorage.setItem('sotu:' + name, JSON.stringify(Store.docs[name])); } catch (e) {} },
+  async sync(){
+    if (!this.on || !this.user || this.busy) return; this.busy = true; paintSync();
+    try {
+      const FB = window.SotuFB, uid = this.user.uid, own = this.owner(), foreign = own && own !== uid;
+      for (const name of DOCS){
+        const snap = await withTimeout(FB.getDoc(this.ref(name)), 15000);
+        let server = null; if (snap.exists()) { try { server = JSON.parse(snap.data().json); } catch (e) { server = null; } }
+        const local = Store.docs[name];
+        if (foreign) { Store.docs[name] = server || this.blank(name); this.saveLocal(name); continue; } // máy đang giữ tiến độ của tài khoản khác: không trộn
+        if (!server) { if (local.t) await withTimeout(FB.setDoc(this.ref(name), {t:local.t, json:JSON.stringify(local)}), 15000); continue; }
+        if (!local.t && !Store.dirty.has(name)) { Store.docs[name] = server; this.saveLocal(name); continue; }
+        const m = this.merge(name, local, server), ms = JSON.stringify(m);
+        if (ms !== JSON.stringify(local)) { Store.docs[name] = m; this.saveLocal(name); }
+        if (ms !== JSON.stringify(server)) { m.t = Math.max(m.t, Date.now()); Store.docs[name] = m; this.saveLocal(name); await withTimeout(FB.setDoc(this.ref(name), {t:m.t, json:JSON.stringify(m)}), 15000); }
+      }
+      const m = Store.docs.meta; m.place = m.place || {}; m.set = m.set || {}; m.log = m.log || {}; m.flags = m.flags || [];
+      try { localStorage.setItem('sotu:owner', uid); } catch (e) {}
+      this.err = null; this.last = Date.now(); this.queue.clear();
+    } catch (e) { this.err = (e && (e.code || e.message)) || 'lỗi'; }
+    finally { this.busy = false; paintSync(); }
+  },
+  async push(){ // chép các tài liệu vừa lưu lên máy chủ
+    if (!this.on || !this.user || this.busy || !this.queue.size || this.owner() !== this.user.uid) return;
+    this.busy = true; paintSync();
+    try {
+      for (const name of Array.from(this.queue)){ const b = Store.docs[name]; await withTimeout(window.SotuFB.setDoc(this.ref(name), {t:b.t || Date.now(), json:JSON.stringify(b)}), 15000); this.queue.delete(name); }
+      this.err = null; this.last = Date.now();
+    } catch (e) { this.err = (e && (e.code || e.message)) || 'lỗi'; }
+    finally { this.busy = false; paintSync(); }
+  }
+};
+const AUTH_ERR = {'auth/invalid-credential':'Email hoặc mật khẩu không đúng.', 'auth/wrong-password':'Email hoặc mật khẩu không đúng.', 'auth/user-not-found':'Chưa có tài khoản với email này.', 'auth/email-already-in-use':'Email này đã có tài khoản. Bấm Đăng nhập.', 'auth/weak-password':'Mật khẩu cần ít nhất 6 ký tự.', 'auth/invalid-email':'Email chưa đúng dạng.', 'auth/missing-password':'Chưa nhập mật khẩu.', 'auth/network-request-failed':'Không có mạng. Thử lại sau.', 'auth/too-many-requests':'Thử quá nhiều lần. Chờ một lúc rồi thử lại.'};
+function accountPanel(){
+  if (!Cloud.on) return null;
+  const FB = window.SotuFB, msg = h('p', {class:'muted', role:'status', id:'acMsg'});
+  const say = (t, bad) => { msg.textContent = t; msg.style.color = bad ? 'var(--bad)' : ''; };
+  const fail = e => say(AUTH_ERR[e && e.code] || ('Chưa làm được (' + ((e && (e.code || e.message)) || 'lỗi') + ').'), true);
+  if (Cloud.user){
+    if (Cloud.err) say('Lần đồng bộ gần nhất chưa xong (' + Cloud.err + ').', true); else if (Cloud.last) say('Đã đồng bộ lúc ' + new Date(Cloud.last).toLocaleTimeString('vi-VN') + '.');
+    return h('section', {class:'panel'}, h('h2', null, 'Tài khoản'),
+      h('p', null, 'Đang đăng nhập: ', h('b', null, Cloud.user.email || '')),
+      h('p', {class:'muted'}, 'Tiến độ được chép lên máy chủ sau mỗi lần lưu. Đăng nhập cùng tài khoản trên máy khác là học tiếp được.'),
+      h('div', {class:'row'},
+        h('button', {type:'button', class:'btn', onclick:async () => { say('Đang đồng bộ…'); await Store.flush(); await Cloud.sync(); viewSettings(); }}, 'Đồng bộ ngay'),
+        h('button', {type:'button', class:'btn', onclick:async () => { await Store.flush(); await Cloud.push(); try { await FB.signOut(Cloud.auth); } catch (e) {} Cloud.user = null; paintSync(); viewSettings(); }}, 'Đăng xuất')),
+      msg);
+  }
+  const email = h('input', {type:'email', id:'acEmail', class:'sel', autocomplete:'username', autocapitalize:'off', spellcheck:'false', placeholder:'email', style:'flex:1;min-width:220px'});
+  const pass = h('input', {type:'password', id:'acPass', class:'sel', autocomplete:'current-password', placeholder:'mật khẩu, ít nhất 6 ký tự', style:'flex:1;min-width:220px'});
+  const go = async reg => {
+    const e = email.value.trim(), p = pass.value; if (!e || !p) return say('Nhập email và mật khẩu.', true);
+    say(reg ? 'Đang tạo tài khoản…' : 'Đang đăng nhập…');
+    try {
+      await Store.flush();
+      const cred = await (reg ? FB.createUserWithEmailAndPassword : FB.signInWithEmailAndPassword)(Cloud.auth, e, p);
+      Cloud.user = cred.user; await Cloud.sync();
+      if (Cloud.err) { viewSettings(); return; }
+      rebuildVocab(); viewHome();
+    } catch (x) { fail(x); }
+  };
+  return h('section', {class:'panel'}, h('h2', null, 'Tài khoản'),
+    h('p', {class:'muted'}, 'Đăng nhập để tiến độ được lưu trên máy chủ: không lo mất khi đổi máy hay xoá dữ liệu trình duyệt, và học tiếp được trên máy khác. Chưa có tài khoản thì nhập email, đặt mật khẩu rồi bấm Tạo tài khoản.'),
+    h('div', {class:'row'}, h('label', {for:'acEmail', class:'muted', style:'min-width:70px'}, 'Email'), email),
+    h('div', {class:'row'}, h('label', {for:'acPass', class:'muted', style:'min-width:70px'}, 'Mật khẩu'), pass),
+    h('div', {class:'row'},
+      h('button', {type:'button', class:'btn primary', onclick:() => go(false)}, 'Đăng nhập'),
+      h('button', {type:'button', class:'btn', onclick:() => go(true)}, 'Tạo tài khoản'),
+      h('button', {type:'button', class:'btn ghost', onclick:async () => { const e = email.value.trim(); if (!e) return say('Nhập email trước.', true); try { await FB.sendPasswordResetEmail(Cloud.auth, e); say('Đã gửi thư đặt lại mật khẩu tới ' + e + '. Xem cả hộp thư rác.'); } catch (x) { fail(x); } }}, 'Quên mật khẩu')),
+    msg);
 }
 
 
@@ -1292,6 +1399,7 @@ function viewSettings(){
   const sw = (id, label, k, val) => h('label', {class:'switch', for:id}, h('span', null, label), h('input', {type:'checkbox', id, checked:val, onchange:e => save(k, e.currentTarget.checked)}));
   show('set', [
     h('h1', null, 'Cài đặt'),
+    accountPanel(),
     h('section', {class:'panel'},
       h('div', {class:'field'}, h('label', {for:'setWr'}, 'Tỷ lệ viết tay trong phiên: ', wrOut), h('input', {type:'range', id:'setWr', min:10, max:50, step:5, value:set.wr, oninput:e => { wrOut.textContent = e.currentTarget.value + '%'; save('wr', +e.currentTarget.value); }}), h('small', {class:'fine'}, 'Mặc định 25%. Phần ôn nhanh co giãn theo.')),
       h('div', {class:'field'}, h('label', {for:'setNd'}, 'Từ mới mỗi ngày: ', ndOut), h('input', {type:'range', id:'setNd', min:5, max:40, step:5, value:set.nd, oninput:e => { ndOut.textContent = e.currentTarget.value + ' từ'; save('nd', +e.currentTarget.value); }})),
@@ -1302,10 +1410,10 @@ function viewSettings(){
       sw('setSnd', 'Tự phát âm khi hiện đáp án', 'snd', set.snd), sw('setAuto', 'Tự sang thẻ kế khi trả lời đúng', 'auto', set.auto), sw('setNames', 'Học cả năm tên riêng', 'names', set.names)),
     h('section', {class:'panel'}, h('h2', null, 'Dữ liệu'),
       h('p', {class:'muted'}, 'Kho từ: ' + V.items.length + ' mục (' + V.seedN + ' mục gốc, ' + V.dbN + ' mục nạp qua kho dữ liệu; kho dữ liệu: ' + V.dbState + '). Âm thanh thu sẵn: ' + Object.keys(Snd.index || {}).length + ' mục.'),
-      h('p', {class:'muted'}, Store.mode === 'claude' ? 'Tiến độ lưu trên máy chủ Claude theo tài khoản của anh, đồng bộ giữa các máy.' : 'Tiến độ đang lưu trên máy này.'),
+      h('p', {class:'muted'}, Store.mode === 'claude' ? 'Tiến độ lưu trên máy chủ Claude theo tài khoản của anh, đồng bộ giữa các máy.' : (Cloud.user ? 'Tiến độ lưu trên máy này và được chép lên máy chủ theo tài khoản đang đăng nhập.' : 'Tiến độ đang lưu trên máy này.')),
       h('p', {class:'muted'}, 'Câu mẫu: ' + SENTS.length + ' câu, đang dùng được ' + readySents().length + '.'),
       m.flags.length ? h('p', {class:'muted'}, 'Mục anh đã báo lỗi: ' + m.flags.map(f => f.h).join('、') + '. Claude sẽ soát ở lần nạp từ kế tiếp.') : null),
-    Store.mode !== 'claude' ? backupPanel() : null,
+    backupPanel(),
     h('section', {class:'panel'}, h('h2', null, 'Nguồn'),
       h('small', {class:'fine'}, 'Nét chữ: Hanzi Writer (MIT) và bộ dữ liệu Make Me a Hanzi, phát hành theo Arphic Public License, xem tệp strokes/LICENSE.txt. Lịch ôn: ts-fsrs (MIT). Giọng đọc: Han (Premium) của macOS, thu sẵn.'))
   ]);
@@ -1318,6 +1426,8 @@ async function boot(){
     await Store.init();
     msg('Đang đọc tiến độ và kho từ…');
     await Promise.all([Store.loadAll(), Snd.init(), Strokes.loadCore().catch(() => null)]);
+    Cloud.init();
+    if (Cloud.on) { await Cloud.ready; if (Cloud.user) { let late = false; const job = Cloud.sync().then(() => { if (late && curView === 'home' && !Session.on) viewHome(); }); await Promise.race([job, new Promise(r => setTimeout(r, 5000))]); late = true; } }
     await loadVocab(); await loadSents();
     paintSync(); viewHome();
     if (Strokes.cache['习']) $('.seal').innerHTML = svgFor(Strokes.cache['习']);
@@ -1328,7 +1438,7 @@ async function boot(){
     show('err', [h('h1', null, 'Chưa mở được sổ'), h('p', {class:'muted'}, 'Không đọc được dữ liệu (' + ((e && (e.code || e.message)) || 'lỗi') + '). Tiến độ của anh không bị ghi đè. Kiểm tra mạng rồi thử lại.'), h('div', {class:'row'}, h('button', {type:'button', class:'btn primary big', onclick:() => { view().textContent = ''; view().appendChild(h('p', {class:'muted', id:'bootmsg'}, 'Đang mở sổ…')); boot(); }}, 'Thử lại'))]);
   }
 }
-window.__app = {Ink, exFree, practiceGen, readySents, SET, viewPractice, viewSettings, Store, V, Session, Strokes, Snd, segment, grade, stats, P, META, viewHome, viewPlacement, applyPlacement, items, newQueue, dueList, unplaced};
+window.__app = {Cloud, Ink, exFree, practiceGen, readySents, SET, viewPractice, viewSettings, Store, V, Session, Strokes, Snd, segment, grade, stats, P, META, viewHome, viewPlacement, applyPlacement, items, newQueue, dueList, unplaced};
 boot();
 })();
 </script>
