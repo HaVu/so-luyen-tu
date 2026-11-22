@@ -369,7 +369,7 @@ h2{color:var(--ink);font-size:17px;font-weight:700}
 </head>
 <body>
 <header class="top">
-  <div class="brand"><span class="seal" lang="zh-Hans" aria-hidden="true">习</span><span>Sổ luyện từ</span></div>
+  <div class="brand"><span class="seal" lang="zh-Hans" aria-hidden="true">家</span><span>Sổ luyện từ</span></div>
   <span class="sync" id="sync" role="status"></span>
   <nav aria-label="Trang">
     <button type="button" id="navHome">Hôm nay</button>
@@ -2076,7 +2076,7 @@ async function boot(){
     if (Cloud.on) { await Cloud.ready; if (Cloud.user) { let late = false; const job = Cloud.sync().then(() => { if (late && curView === 'home' && !Session.on) viewHome(); }); await Promise.race([job, new Promise(r => setTimeout(r, 5000))]); late = true; } }
     await loadVocab(); await loadSents();
     paintSync(); applyFont(); viewHome();
-    if (Strokes.cache['习']) $('.seal').innerHTML = svgFor(Strokes.cache['习']);
+    if (Strokes.cache['家']) $('.seal').innerHTML = svgFor(Strokes.cache['家']);
     setTimeout(() => Snd.preloadAll(), 1500);
     setTimeout(() => sendDiag(), 2500);
   } catch (e) {
