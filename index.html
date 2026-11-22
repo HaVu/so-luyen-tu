@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -375,17 +375,17 @@ h2{color:var(--ink);font-size:17px;font-weight:700}
   /* men lam (nút chính) */
   --b1:#5d84c8; --b2:#2c579f; --b3:#1b3b78; --bfoot:#7d6142;
   /* men nâu đất (nút phụ) */
-  --t1:#d48a64; --t2:#a8583a; --t3:#7c3c24; --tfoot:#6e4a2e;
+  --t1:#d48a64; --t2:#a8583a; --t3:#7c3c24; --tfoot:#6e4a2e; --well:#efe8d8;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
     --crackle-s:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cg fill='none' stroke='%23fff' stroke-opacity='.07' stroke-width='.7'%3E%3Cpath d='M0 18L22 24 37 14 58 28 90 21M37 14 40 0M58 28 54 52 70 66 64 90M54 52 26 57 0 52M26 57 30 78 12 90M70 66 90 70'/%3E%3C/g%3E%3C/svg%3E");
-    --g1:#2c3446; --g2:#222939; --g3:#1a2030; --gfoot:#0e121b; --gtext:#ece5d6; --bfoot:#0d1730; --tfoot:#2a170e;
+    --g1:#2c3446; --g2:#222939; --g3:#1a2030; --gfoot:#0e121b; --gtext:#ece5d6; --bfoot:#0d1730; --tfoot:#2a170e; --well:#1b2231;
   }
 }
 :root[data-theme="dark"]{
   --crackle-s:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cg fill='none' stroke='%23fff' stroke-opacity='.07' stroke-width='.7'%3E%3Cpath d='M0 18L22 24 37 14 58 28 90 21M37 14 40 0M58 28 54 52 70 66 64 90M54 52 26 57 0 52M26 57 30 78 12 90M70 66 90 70'/%3E%3C/g%3E%3C/svg%3E");
-  --g1:#2c3446; --g2:#222939; --g3:#1a2030; --gfoot:#0e121b; --gtext:#ece5d6; --bfoot:#0d1730; --tfoot:#2a170e;
+  --g1:#2c3446; --g2:#222939; --g3:#1a2030; --gfoot:#0e121b; --gtext:#ece5d6; --bfoot:#0d1730; --tfoot:#2a170e; --well:#1b2231;
 }
 /* nền: men ngà ngả xám, có chỗ men dày mỏng */
 body{background-color:var(--paper);background-image:radial-gradient(ellipse at 20% 0%,rgba(255,250,235,.35),transparent 60%),radial-gradient(ellipse at 90% 100%,rgba(120,95,60,.10),transparent 55%),var(--crackle)}
@@ -419,10 +419,7 @@ body{background-color:var(--paper);background-image:radial-gradient(ellipse at 2
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn[aria-pressed="true"],:root:not([data-theme="light"]) .tb button[aria-pressed="true"]{background:linear-gradient(180deg,#2e4270,#22325a);color:#e8eefc}}
 .btn.ghost{background:none;box-shadow:none;border-color:transparent;text-shadow:none}
 .btn[disabled]{filter:saturate(.6)}
-.cell,.cell.fw,#grid{background-color:#efe8d8}
-:root[data-theme="dark"] .cell,:root[data-theme="dark"] .cell.fw,:root[data-theme="dark"] #grid{background-color:var(--card)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .cell,:root:not([data-theme="light"]) .cell.fw,:root:not([data-theme="light"]) #grid{background-color:var(--card)}}
-.prompt .mean.big{background-color:#efe8d8}
+.cell,.cell.fw,#grid,.prompt .mean.big{background-color:var(--well)}
 :root[data-theme="dark"] .panel,:root[data-theme="dark"] .tile,:root[data-theme="dark"] .cd,:root[data-theme="dark"] .opt{background-image:radial-gradient(ellipse at 35% 0%,rgba(160,185,235,.07),transparent 65%),var(--crackle-s)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .panel,:root:not([data-theme="light"]) .tile,:root:not([data-theme="light"]) .cd,:root:not([data-theme="light"]) .opt{background-image:radial-gradient(ellipse at 35% 0%,rgba(160,185,235,.07),transparent 65%),var(--crackle-s)}}
 :root[data-theme="dark"] .panel{box-shadow:inset 0 0 0 5px var(--card),inset 0 0 0 6.5px var(--cob-line),inset 0 0 26px rgba(0,0,0,.25),0 3px 0 var(--line2),0 10px 22px var(--shadow)}
@@ -435,6 +432,33 @@ body{background-color:var(--paper);background-image:radial-gradient(ellipse at 2
 .grow:first-child{border-top:0}
 .gname b{font-size:17px}
 .gsample{font-family:var(--han);font-size:19px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* bố cục gọn cho điện thoại */
+.pm{display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:4px 12px;text-align:center}
+.info .pm .py{font-size:22px} .info .pm .mean{font-size:19px;font-weight:600}
+.info .pm .pill{align-self:center}
+.row.acts{justify-content:center;gap:8px}
+.btn.flag{color:var(--muted);font-weight:500}
+.nextbar{position:sticky;bottom:calc(10px + env(safe-area-inset-bottom));z-index:6}
+.row.lrow{justify-content:center;align-items:center;gap:14px}
+.opts.han .opt{justify-content:center}
+@media (max-width:559px){
+  .wrap{padding:12px 12px 32px;gap:12px}
+  .panel{padding:14px 12px;gap:10px}
+  .prompt{gap:6px;padding:2px 0}
+  .prompt .mean{font-size:22px}
+  .opts{gap:8px}
+  .opt{min-height:50px;padding:10px 12px;font-size:17px}
+  .opts.han{grid-template-columns:1fr 1fr}
+  .opt.han{font-size:32px;min-height:64px}
+  .listen{width:84px;height:84px;font-size:15px}
+  .info{gap:6px;padding-top:10px}
+  .info .pm .py{font-size:20px} .info .pm .mean{font-size:18px}
+  .row.acts .btn{padding-left:12px;padding-right:12px}
+  .modes{flex-wrap:nowrap;gap:6px} .modes .btn.small{padding:4px 10px}
+  .tb button{min-height:46px}
+  .trow .cell{width:46px;height:46px}
+}
 
 </style>
 </head>
@@ -671,7 +695,8 @@ function cellEl(ch, px, cls){
 function wordEl(hz, px, opts){
   opts = opts || {};
   const chars = Array.from(hz), n = chars.filter(isHan).length || 1;
-  const avail = Math.min(($('#view') ? $('#view').clientWidth : 700) - 8, 720);
+  const avail = Math.min(($('#view') ? $('#view').clientWidth : 700) - 40, 720);
+  if (isPhone()) px = Math.min(px, 96); /* màn hình điện thoại: chữ đề bài vừa một hàng, chừa chỗ cho phần trả lời */
   const size = Math.max(34, Math.min(px, Math.floor((avail - (n - 1) * 6) / Math.min(n, opts.wrapAt || n))));
   const w = h('div', {class:'word', lang:'zh-Hans', 'aria-label':hz});
   chars.forEach(c => { if (isHan(c)) w.appendChild(cellEl(c, size)); else if (c.trim()) w.appendChild(h('span', {class:'gap', text:c})); });
@@ -894,21 +919,24 @@ function viewPlacement(){
 }
 
 /* ================= bài tập ================= */
-function audioBtns(it){
-  if (!playable(it)) return null;
-  return h('div', {class:'row'}, h('button', {type:'button', class:'btn', onclick:() => Snd.play(it, 1)}, 'Nghe'), h('button', {type:'button', class:'btn', onclick:() => Snd.play(it, 0.65)}, 'Nghe chậm'));
+const isPhone = () => window.innerWidth < 560;
+function audioList(it){
+  if (!playable(it)) return [];
+  return [h('button', {type:'button', class:'btn', onclick:() => Snd.play(it, 1)}, 'Nghe'), h('button', {type:'button', class:'btn', onclick:() => Snd.play(it, 0.65)}, 'Nghe chậm')];
 }
-function infoPanel(it){
-  const flagged = META().flags.some(f => f.h === it.h);
-  const fb = h('button', {type:'button', class:'btn ghost', 'aria-pressed':String(flagged), onclick:e => {
-    const m = META(), i = m.flags.findIndex(f => f.h === it.h);
-    if (i >= 0) m.flags.splice(i, 1); else m.flags.push({h:it.h, t:dayStr(Date.now())});
-    Store.mark('meta'); e.currentTarget.textContent = i >= 0 ? 'Báo mục này có lỗi' : 'Đã báo lỗi, bấm để bỏ';
-  }}, flagged ? 'Đã báo lỗi, bấm để bỏ' : 'Báo mục này có lỗi');
-  const word = wordEl(it.h, 76);
-  return h('div', {class:'info'}, word, printRow(it.h), h('div', {class:'py', text:it.p}), h('div', {class:'mean', text:it.m}),
-    h('div', {class:'row'}, it.g ? h('span', {class:'pill'}, it.g) : null, it.x ? h('span', {class:'pill warn'}, 'Từ mở rộng, không có trong vở') : null, it.u ? h('span', {class:'pill warn'}, 'Chưa xác nhận với vở') : null),
-    h('div', {class:'row', style:'justify-content:center'}, audioBtns(it), demoBtn(word)), fb);
+function audioBtns(it){
+  const a = audioList(it); return a.length ? h('div', {class:'row'}, a) : null;
+}
+/* pinyin và nghĩa trên cùng một dòng, nhãn nhóm đi kèm */
+function pmLine(py, mean, tags){
+  return h('div', {class:'pm'}, h('span', {class:'py', text:py}), h('span', {class:'mean', text:mean}), tags || null);
+}
+/* Phần đáp án sau khi trả lời. pw là chữ đã hiện ở đề bài: có thì không vẽ lại chữ lớn, nút thứ tự nét chạy ngay trên chữ đề bài. */
+function infoPanel(it, pw){
+  const word = pw || wordEl(it.h, 64);
+  const tags = [it.g ? h('span', {class:'pill'}, it.g) : null, it.x ? h('span', {class:'pill warn'}, 'Từ mở rộng') : null, it.u ? h('span', {class:'pill warn'}, 'Chưa xác nhận với vở') : null];
+  return h('div', {class:'info'}, pw ? null : word, printRow(it.h), pmLine(it.p, it.m, tags),
+    h('div', {class:'row acts'}, audioList(it), demoBtn(word), flagBtn(it.h)));
 }
 function distractMeanings(it, avoidSound){
   const pool = items().filter(x => x.h !== it.h && x.m !== it.m && (!avoidSound || x.key !== it.key));
@@ -926,20 +954,28 @@ function distractHanzi(it){
   if (out.length < 3) shuffle(items().filter(x => x.h !== it.h && x.key !== it.key && out.indexOf(x) < 0)).slice(0, 3 - out.length).forEach(x => out.push(x));
   return out;
 }
-function nextRow(cb, label){ return h('div', {class:'center'}, h('button', {type:'button', class:'btn primary big', id:'btnNext', onclick:cb}, label || 'Tiếp')); }
+/* Nút Tiếp dính ở đáy màn hình nên không phải cuộn tìm; trả lời xong thì cuộn để phần kết quả lên tầm mắt. */
+function nextRow(cb, label){ const r = h('div', {class:'center nextbar'}, h('button', {type:'button', class:'btn primary big', id:'btnNext', onclick:cb}, label || 'Tiếp')); setTimeout(() => bringUp(r), 30); return r; }
+function bringUp(r){
+  const m = document.querySelector('main'), box = r.closest('#exBox'); if (!m || !box || !r.isConnected) return;
+  const v = box.querySelector('.verdict:last-of-type') || box.querySelector('.info'); if (!v) return;
+  const top = v.getBoundingClientRect().top - m.getBoundingClientRect().top;
+  if (top > m.clientHeight * 0.45) m.scrollTo({top:m.scrollTop + top - 70, behavior:'smooth'});
+}
 /* Mỗi bài nhận (ex, api): api.grade(sk, key, rating) ghi kết quả ngay khi trả lời, api.next() sang bài kế. */
 function exMCQ(ex, api){
   const it = ex.item, kind = ex.kind, hanOpts = kind === 'l2';
   const wrong = hanOpts ? distractHanzi(it) : distractMeanings(it, kind === 'l1');
   const opts = shuffle([it].concat(wrong)); let done = false, timer = null;
-  const body = h('div', {class:'opts'});
-  const after = h('div');
+  const body = h('div', {class:'opts' + (hanOpts ? ' han' : '')});
+  const after = h('div'); let pw = null, prompt = null;
   function choose(x, btn){
     if (done) return; done = true;
     const ok = x === it; api.grade(ex.sk, ex.key, ok ? 3 : 1);
     Array.from(body.children).forEach((b, i) => { if (opts[i] === it) b.classList.add('right'); else if (b === btn) b.classList.add('wrong'); b.disabled = true; });
     after.appendChild(h('p', {class:'verdict ' + (ok ? 'ok' : 'bad')}, ok ? 'Đúng' : 'Chưa đúng'));
-    after.appendChild(infoPanel(it));
+    if (!pw && isPhone()) prompt.hidden = true; /* bài nghe: trả lời xong thì thu đề lại, nút Nghe đã có ở phần đáp án */
+    after.appendChild(infoPanel(it, pw));
     const go = () => { clearTimeout(timer); api.next(); };
     after.appendChild(nextRow(go)); KEYS = {Enter:go, ' ':go};
     if (kind === 'm1') autoPlay(it);
@@ -948,9 +984,10 @@ function exMCQ(ex, api){
   }
   opts.forEach((x, i) => body.appendChild(h('button', {type:'button', class:'opt' + (hanOpts ? ' han' : ''), lang:hanOpts ? 'zh-Hans' : null, onclick:e => choose(x, e.currentTarget)}, h('span', {class:'k'}, i + 1), hanOpts ? x.h : x.m)));
   KEYS = {}; opts.forEach((x, i) => { KEYS[String(i + 1)] = () => choose(x, body.children[i]); });
-  const prompt = kind === 'm1'
-    ? h('div', {class:'prompt'}, wordEl(it.h, 132), h('p', {class:'ask'}, 'Mục này nghĩa là gì?'))
-    : h('div', {class:'prompt'}, h('button', {type:'button', class:'listen', onclick:() => Snd.play(it, 1)}, 'Nghe lại'), h('button', {type:'button', class:'btn ghost', onclick:() => Snd.play(it, 0.65)}, 'Nghe chậm'), h('p', {class:'ask'}, kind === 'l1' ? 'Anh vừa nghe từ nào?' : 'Chọn đúng chữ của từ vừa nghe'));
+  if (kind === 'm1') pw = wordEl(it.h, 132);
+  prompt = kind === 'm1'
+    ? h('div', {class:'prompt'}, pw, h('p', {class:'ask'}, 'Mục này nghĩa là gì?'))
+    : h('div', {class:'prompt'}, h('div', {class:'row lrow'}, h('button', {type:'button', class:'listen', onclick:() => Snd.play(it, 1)}, 'Nghe lại'), h('button', {type:'button', class:'btn ghost', onclick:() => Snd.play(it, 0.65)}, 'Nghe chậm')), h('p', {class:'ask'}, kind === 'l1' ? 'Anh vừa nghe từ nào?' : 'Chọn đúng chữ của từ vừa nghe'));
   if (kind !== 'm1') Snd.play(it, 1);
   return [prompt, body, after];
 }
@@ -977,14 +1014,15 @@ function exTones(ex, api){
   function check(){
     if (btn.hidden) return; const ok = tr.check(); btn.hidden = true; api.grade('p', ex.key, ok ? 3 : 1);
     after.appendChild(h('p', {class:'verdict ' + (ok ? 'ok' : 'bad')}, ok ? 'Đúng thanh điệu' : 'Chưa đúng thanh điệu'));
-    after.appendChild(infoPanel(it)); const go = () => api.next(); after.appendChild(nextRow(go)); KEYS = {Enter:go};
+    after.appendChild(infoPanel(it, pw)); const go = () => api.next(); after.appendChild(nextRow(go)); KEYS = {Enter:go};
     autoPlay(it);
   }
   KEYS = {Enter:() => { if (!btn.disabled) check(); }};
-  return [h('div', {class:'prompt'}, wordEl(it.h, 110), h('p', {class:'ask'}, 'Chọn thanh điệu cho từng chữ')), tr.el, h('div', {class:'center'}, btn), after];
+  const pw = wordEl(it.h, 110);
+  return [h('div', {class:'prompt'}, pw, h('p', {class:'ask'}, 'Chọn thanh điệu cho từng chữ')), tr.el, h('div', {class:'center'}, btn), after];
 }
 function exType(ex, api){
-  const it = ex.item, after = h('div'), target = it.syl.map(s => plain(s).replace(/ü/g, 'v')).join('');
+  const it = ex.item, after = h('div'), pw = wordEl(it.h, 110), target = it.syl.map(s => plain(s).replace(/ü/g, 'v')).join('');
   /* Bàn phím riêng của trang: bộ gõ tiếng Việt của máy sẽ biến "wo" thành "ưo" nên không dùng ô nhập của hệ thống. */
   let typed = '', locked = false;
   const out = h('div', {class:'typed', id:'pyTyped', 'aria-live':'polite', lang:'zh-Latn'});
@@ -993,7 +1031,7 @@ function exType(ex, api){
   const kb = h('div', {class:'kb'}, ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'].map((row, ri) => h('div', {class:'r'}, Array.from(row).map(k => h('button', {type:'button', onclick:() => press(k)}, k === 'v' ? 'ü/v' : k)), ri === 2 ? h('button', {type:'button', class:'wide', 'aria-label':'Xoá một chữ', onclick:() => press('del')}, 'Xoá') : null)));
   const btn = h('button', {type:'button', class:'btn primary big', onclick:check}, 'Kiểm tra');
   const stage = h('div', {class:'tones'});
-  function finish(ok, msg){ api.grade('p', ex.key, ok ? 3 : 1); after.appendChild(h('p', {class:'verdict ' + (ok ? 'ok' : 'bad')}, msg)); after.appendChild(infoPanel(it)); const go = () => api.next(); after.appendChild(nextRow(go)); KEYS = {Enter:go}; autoPlay(it); }
+  function finish(ok, msg){ api.grade('p', ex.key, ok ? 3 : 1); after.appendChild(h('p', {class:'verdict ' + (ok ? 'ok' : 'bad')}, msg)); after.appendChild(infoPanel(it, pw)); const go = () => api.next(); after.appendChild(nextRow(go)); KEYS = {Enter:go}; autoPlay(it); }
   function check(){
     if (locked || !typed) return; locked = true; btn.hidden = true; kb.hidden = true;
     if (typed !== target) return finish(false, 'Chưa đúng. Pinyin là ' + it.p);
@@ -1003,20 +1041,20 @@ function exType(ex, api){
     KEYS = {Enter:() => { if (!b2.disabled) b2.click(); }};
   }
   KEYS = {Enter:check, Backspace:() => press('del'), _any:k => { if (/^[a-zA-Z]$/.test(k)) { press(k.toLowerCase()); return true; } if (k === 'ü') { press('v'); return true; } return false; }};
-  return [h('div', {class:'prompt'}, wordEl(it.h, 110), h('p', {class:'ask'}, 'Gõ pinyin của mục này, viết liền. Âm ü gõ phím ü/v.')), h('div', {class:'center'}, out), kb, h('div', {class:'center'}, btn), stage, after];
+  return [h('div', {class:'prompt'}, pw, h('p', {class:'ask'}, 'Gõ pinyin của mục này, viết liền. Âm ü gõ phím ü/v.')), h('div', {class:'center'}, out), kb, h('div', {class:'center'}, btn), stage, after];
 }
 function exFlip(ex, api){
-  const it = ex.item, after = h('div');
+  const it = ex.item, after = h('div'), pw = wordEl(it.h, 132);
   const btn = h('button', {type:'button', class:'btn primary big', onclick:flip}, 'Lật thẻ');
   function flip(){
-    if (btn.hidden) return; btn.hidden = true; after.appendChild(infoPanel(it)); autoPlay(it);
+    if (btn.hidden) return; btn.hidden = true; after.appendChild(infoPanel(it, pw)); autoPlay(it);
     const g = r => () => { api.grade('m', ex.key, r); api.next(); };
     after.appendChild(h('p', {class:'ask'}, 'Anh nhớ nghĩa đến mức nào?'));
-    after.appendChild(h('div', {class:'row', style:'justify-content:center'}, h('button', {type:'button', class:'btn big', onclick:g(1)}, 'Quên'), h('button', {type:'button', class:'btn big', onclick:g(2)}, 'Lơ mơ'), h('button', {type:'button', class:'btn big primary', onclick:g(3)}, 'Nhớ')));
+    after.appendChild(h('div', {class:'row nextbar', style:'justify-content:center'}, h('button', {type:'button', class:'btn big', onclick:g(1)}, 'Quên'), h('button', {type:'button', class:'btn big', onclick:g(2)}, 'Lơ mơ'), h('button', {type:'button', class:'btn big primary', onclick:g(3)}, 'Nhớ')));
     KEYS = {'1':g(1), '2':g(2), '3':g(3), Enter:g(3)};
   }
   KEYS = {Enter:flip, ' ':flip};
-  return [h('div', {class:'prompt'}, wordEl(it.h, 132), h('p', {class:'ask'}, 'Tự nhớ nghĩa và cách đọc, rồi lật thẻ')), h('div', {class:'center'}, btn), after];
+  return [h('div', {class:'prompt'}, pw, h('p', {class:'ask'}, 'Tự nhớ nghĩa và cách đọc, rồi lật thẻ')), h('div', {class:'center'}, btn), after];
 }
 function exIntro(ex, api){
   const it = ex.item, word = wordEl(it.h, 132);
@@ -1024,7 +1062,7 @@ function exIntro(ex, api){
   const go = () => api.next(); KEYS = {Enter:go};
   autoPlay(it);
   return [h('p', {class:'ask'}, 'Từ mới' + (it.added ? ', nạp ngày ' + it.added : '')), h('div', {class:'prompt'}, word, h('div', {class:'py', text:it.p}), h('div', {class:'mean', text:it.m})),
-    h('div', {class:'row', style:'justify-content:center'}, audioBtns(it), anim), nextRow(go, 'Đã xem, tiếp')];
+    h('div', {class:'row acts'}, audioList(it), anim), nextRow(go, 'Đã xem, tiếp')];
 }
 function exWrite(ex, api){
   const it = ex.item, targets = ex.chars.slice(); let ti = 0, writer = null, gaveUp = false, hinted = 0;
@@ -1107,6 +1145,7 @@ function demoBtn(word){
   let busy = false, writers = null;
   const b = h('button', {type:'button', class:'btn', onclick:async () => {
     if (busy) return; busy = true; b.disabled = true;
+    try { word.scrollIntoView({block:'nearest', behavior:'smooth'}); } catch (e) {}
     try {
       if (!writers){
         writers = [];
@@ -1316,8 +1355,8 @@ function exFree(ex, api){
     });
     paint(); after.appendChild(verdict); const allOk = res.every(g => g.rating >= 2); if (tries === 1) { ex.fxDone = true; FX.answer(allOk); } else if (allOk) FX.answer(true, true);
     const model = wordEl(hz, sent ? 60 : 76);
-    after.appendChild(h('div', {class:'info'}, model, printRow(hz), h('div', {class:'py', text:py}), h('div', {class:'mean', text:mean}),
-      h('div', {class:'row', style:'justify-content:center'}, demoBtn(model), it ? audioBtns(it) : h('button', {type:'button', class:'btn', onclick:() => playSent({sent, hz})}, 'Nghe'), flagBtn(hz)),
+    after.appendChild(h('div', {class:'info'}, model, printRow(hz), pmLine(py, mean),
+      h('div', {class:'row acts'}, it ? audioList(it) : h('button', {type:'button', class:'btn', onclick:() => playSent({sent, hz})}, 'Nghe'), demoBtn(model), flagBtn(hz)),
       sent ? h('small', {class:'fine'}, 'Câu do Claude đặt từ các từ anh đã học.') : null));
     const go = () => {
       const worst = {}; cells.forEach((c, i) => { worst[c.ch] = Math.min(worst[c.ch] || 4, res[i].rating); });
@@ -1486,8 +1525,8 @@ function exSent(ex, api){
     const readStr = ops.filter(o => o.i >= 0).map(o => o.st === 'ok' || o.st === 'near' ? exp[o.j] : (o.movedTo != null ? exp[o.movedTo] : (o.read || '？'))).join('');
     if (!st0.perfect) after.appendChild(h('div', {class:'center'}, h('button', {type:'button', class:'btn', 'aria-pressed':'false', onclick:e => { allOver = !allOver; e.currentTarget.setAttribute('aria-pressed', String(allOver)); const m = META(), i = m.flags.findIndex(f => f.h === hz && f.alt); if (allOver && i < 0) m.flags.push({h:hz, t:dayStr(Date.now()), alt:readStr}); else if (!allOver && i >= 0) m.flags.splice(i, 1); Store.mark('meta'); paint(); }}, 'Câu tôi viết cũng đúng')));
     const model = wordEl(hz, exp.length > 14 ? 40 : 56); model.style.flexWrap = 'wrap'; model.style.justifyContent = 'center';
-    after.appendChild(h('div', {class:'info'}, h('small', {class:'fine'}, 'Câu mẫu. Từ tô xanh là từ anh viết được, tô đỏ là từ cần xem lại.'), ref, model, printRow(hz), h('div', {class:'py', text:sent.p}), h('div', {class:'mean', text:sent.m}),
-      h('div', {class:'row', style:'justify-content:center'}, demoBtn(model), h('button', {type:'button', class:'btn', onclick:() => playSent(ex, 1)}, 'Nghe'), h('button', {type:'button', class:'btn', onclick:() => playSent(ex, 0.65)}, 'Nghe chậm'), flagBtn(hz)),
+    after.appendChild(h('div', {class:'info'}, h('small', {class:'fine'}, 'Câu mẫu. Từ tô xanh là từ anh viết được, tô đỏ là từ cần xem lại.'), ref, model, printRow(hz), pmLine(sent.p, sent.m),
+      h('div', {class:'row acts'}, h('button', {type:'button', class:'btn', onclick:() => playSent(ex, 1)}, 'Nghe'), h('button', {type:'button', class:'btn', onclick:() => playSent(ex, 0.65)}, 'Nghe chậm'), demoBtn(model), flagBtn(hz)),
       h('small', {class:'fine'}, sent.n ? 'Câu số ' + sent.n + ' trong bài tập của thầy. Bản tiếng Trung do Claude dịch, chưa đối chiếu với đáp án của thầy.' : 'Câu do Claude đặt.')));
     const go = () => {
       const st = paint(), worst = {}; exp.forEach((ch, j) => { worst[ch] = Math.min(worst[ch] || 4, st.rs[j]); });
@@ -1509,15 +1548,16 @@ function exSent(ex, api){
 }
 /* cùng chữ đó ở hai kiểu chữ in hay gặp trên máy: không chân (Hei) và có chân (Song) */
 function printRow(hz){
+  if (SET().font !== 'kai') return null; /* chữ máy tính: chữ trong bài đã là chữ in, không lặp lại */
   return h('div', {class:'print', lang:'zh-Hans'}, h('span', {class:'lab'}, 'Chữ in'), h('span', {class:'hei'}, hz), h('span', {class:'song'}, hz));
 }
 function flagBtn(key){
   const on = () => META().flags.some(f => f.h === key);
-  return h('button', {type:'button', class:'btn ghost', onclick:e => {
+  return h('button', {type:'button', class:'btn ghost small flag', onclick:e => {
     const m = META(), i = m.flags.findIndex(f => f.h === key);
     if (i >= 0) m.flags.splice(i, 1); else m.flags.push({h:key, t:dayStr(Date.now())});
-    Store.mark('meta'); e.currentTarget.textContent = i >= 0 ? 'Báo mục này có lỗi' : 'Đã báo lỗi, bấm để bỏ';
-  }}, on() ? 'Đã báo lỗi, bấm để bỏ' : 'Báo mục này có lỗi');
+    Store.mark('meta'); e.currentTarget.textContent = i >= 0 ? 'Báo lỗi' : 'Đã báo lỗi ✓';
+  }}, on() ? 'Đã báo lỗi ✓' : 'Báo lỗi');
 }
 
 /* ================= xếp chữ thành câu ================= */
@@ -1542,9 +1582,8 @@ function exOrder(ex, api){
     logOnly('c', ok, (Date.now() - t0) / 1000); api.count('c', ok);
     Array.from(ans.children).forEach((b, k) => b.classList.add(toks[picked[k]] === toks[k] ? 'right' : 'wrong'));
     after.appendChild(h('p', {class:'verdict ' + (ok ? 'ok' : 'bad')}, ok ? 'Đúng' : 'Chưa khớp câu mẫu'));
-    const model = wordEl(hz, 60);
-    after.appendChild(h('div', {class:'info'}, model, h('div', {class:'py', text:py}), h('div', {class:'mean', text:mean}),
-      h('div', {class:'row', style:'justify-content:center'}, demoBtn(model), it ? audioBtns(it) : h('button', {type:'button', class:'btn', onclick:() => playSent({sent, hz})}, 'Nghe'), flagBtn(sent ? hz : it.h)),
+    after.appendChild(h('div', {class:'info'}, ok ? null : h('div', {class:'hanline', lang:'zh-Hans', text:hz}), pmLine(py, mean),
+      h('div', {class:'row acts'}, it ? audioList(it) : h('button', {type:'button', class:'btn', onclick:() => playSent({sent, hz})}, 'Nghe'), flagBtn(sent ? hz : it.h)),
       sent ? h('small', {class:'fine'}, 'Câu do Claude đặt từ các từ anh đã học. Tiếng Trung đôi khi có cách xếp khác cũng đúng.') : null));
     const go = () => api.next(); after.appendChild(nextRow(go)); KEYS = {Enter:go};
   }
@@ -1914,7 +1953,7 @@ const DECO = {
 /* ---------- cài đặt âm thanh và hiệu ứng ---------- */
 function fxPanel(save){
   const s = META().set, cur = s.fx || 'full';
-  const th = s.theme || 'auto';
+  const th = s.theme || 'light';
   return h('section', {class:'panel'}, h('h2', null, 'Giao diện, âm thanh và hiệu ứng'),
     h('div', {class:'field'}, h('span', {style:'font-weight:600'}, 'Giao diện'),
       h('div', {class:'row'}, [['auto', 'Theo máy'], ['light', 'Sáng'], ['dark', 'Tối']].map(o => h('button', {type:'button', class:'btn', 'aria-pressed':String(th === o[0]), onclick:e => { save('theme', o[0]); applyTheme(); Array.from(e.currentTarget.parentNode.children).forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); }}, o[1]))),
@@ -1931,8 +1970,8 @@ function fxPanel(save){
    meta.set.ord: 'hinh' chỉ cần đúng mặt chữ, nét nào trước cũng được (mặc định từ 22/11, theo các bạn) | 'net' viết đúng thứ tự nét.
    meta.set.font: 'may' chữ máy tính, dùng phông hệ thống như trên điện thoại và web (mặc định) | 'kai' chữ khải, vẽ bằng dữ liệu nét. */
 function applyFont(){ try { document.documentElement.setAttribute('data-font', SET().font); } catch (e) {} applyTheme(); }
-/* giao diện sáng tối: meta.set.theme = auto (theo máy, mặc định) | light | dark */
-function applyTheme(){ let t = 'auto'; try { t = META().set.theme || 'auto'; } catch (e) {} const r = document.documentElement; if (t === 'light' || t === 'dark') r.setAttribute('data-theme', t); else r.removeAttribute('data-theme'); }
+/* giao diện sáng tối: meta.set.theme = light (mặc định) | auto (theo máy) | dark */
+function applyTheme(){ let t = 'light'; try { t = META().set.theme || 'light'; } catch (e) {} const r = document.documentElement; if (t === 'light' || t === 'dark') r.setAttribute('data-theme', t); else r.removeAttribute('data-theme'); }
 function writeStylePanel(set, save){
   const pick = (k, opts, cur, after) => h('div', {class:'row'}, opts.map(o => h('button', {type:'button', class:'btn', 'aria-pressed':String(cur === o[0]), onclick:e => { save(k, o[0]); Array.from(e.currentTarget.parentNode.children).forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); if (after) after(o[0]); }}, o[1])));
   return h('div', {class:'field'},
@@ -2190,7 +2229,7 @@ async function boot(){
     show('err', [h('h1', null, 'Chưa mở được sổ'), h('p', {class:'muted'}, 'Không đọc được dữ liệu (' + ((e && (e.code || e.message)) || 'lỗi') + '). Tiến độ của anh không bị ghi đè. Kiểm tra mạng rồi thử lại.'), h('div', {class:'row'}, h('button', {type:'button', class:'btn primary big', onclick:() => { view().textContent = ''; view().appendChild(h('p', {class:'muted', id:'bootmsg'}, 'Đang mở sổ…')); boot(); }}, 'Thử lại'))]);
   }
 }
-window.__app = {exOrder, sentProgress, startSent, SENTS:() => SENTS, exSent, sentAlign, exTones, Cloud, Ink, exFree, practiceGen, readySents, SET, viewPractice, viewSettings, Store, V, Session, Strokes, Snd, segment, grade, stats, P, META, viewHome, viewPlacement, viewPlaceGroups, applyPlacement, items, newQueue, dueList, unplaced};
+window.__app = {exOrder, exMCQ, exType, exTones, exFlip, exIntro, exWrite, show, h, sentProgress, startSent, SENTS:() => SENTS, exSent, sentAlign, exTones, Cloud, Ink, exFree, practiceGen, readySents, SET, viewPractice, viewSettings, Store, V, Session, Strokes, Snd, segment, grade, stats, P, META, viewHome, viewPlacement, viewPlaceGroups, applyPlacement, items, newQueue, dueList, unplaced};
 boot();
 })();
 </script>
