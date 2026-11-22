@@ -156,6 +156,9 @@ small.fine{font-size:13px;color:var(--muted);line-height:1.4}
 .fwcol{display:flex;flex-direction:column;align-items:center;gap:4px;max-width:200px}
 .sgrid{display:grid;gap:6px;width:100%;margin:0 auto;align-items:start}
 .sgrid .fwcol{max-width:none;min-width:0} .sgrid .cell{display:block}
+.sgrid.thumbs canvas{pointer-events:none} .sgrid.thumbs .cell{cursor:pointer;border-radius:6px} .sgrid .cell.act{border-color:var(--jade);box-shadow:0 0 0 2px var(--jade)}
+.padwrap{width:100%;max-width:440px;margin:0 auto;display:flex;flex-direction:column;gap:8px} .padwrap .cell{display:block;border-width:2px}
+.modes .btn.small{min-height:36px;padding:4px 12px}
 .cell.miss{border-style:dashed;border-color:var(--bad)}
 .hintline{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;color:var(--muted)} .hintline p{margin:0} .hintline .py{color:var(--jade);font-size:20px} .hintline .boxes{font-size:20px;letter-spacing:2px;color:var(--ink)}
 .mean.big{font-size:24px;font-weight:700;text-align:center}
@@ -488,7 +491,7 @@ function knownCard(S, spreadDays){
   const due = Date.now() + (Math.random() * spreadDays - 1) * DAY; // khoảng một phần mười đến hạn ngay để kiểm lại
   return [Math.round(due / 60000), S, 3, 1, 0, 2, Math.round(Math.min(Date.now(), due - S * DAY) / 60000), 2, 0, S];
 }
-function SET(){ const s = META().set; return {wr:s.wr || 25, nd:s.nd || 15, names:s.names !== false, auto:s.auto === true, snd:s.snd !== false, mins:s.mins || 15, quiet:!!s.quiet, wm:s.wm || 'mix', strict:!!s.strict, t3:!!s.t3}; }
+function SET(){ const s = META().set; return {wr:s.wr || 25, nd:s.nd || 15, names:s.names !== false, auto:s.auto === true, snd:s.snd !== false, mins:s.mins || 15, quiet:!!s.quiet, wm:s.wm || 'mix', strict:!!s.strict, t3:!!s.t3, wz:s.wz || 'auto'}; }
 function enabled(it){ return SET().names || it.g !== 'Tên riêng'; }
 function items(){ return V.items.filter(enabled); }
 function retention(sk){
@@ -585,6 +588,7 @@ function viewHome(){
       h('div', {class:'row'}, durBtns, h('button', {type:'button', class:'btn', 'aria-pressed':String(set.quiet), onclick:() => { META().set.quiet = !set.quiet; Store.mark('meta'); viewHome(); }}, set.quiet ? 'Yên lặng: đang bật' : 'Yên lặng: đang tắt')),
       h('div', {class:'row'}, h('button', {type:'button', class:'btn primary big', disabled:!canStart, onclick:() => { Snd.unlock(); Session.start(mins); }}, 'Bắt đầu học'),
         !canStart ? h('span', {class:'muted'}, up.length ? 'Chưa có thẻ nào. Xếp trình độ để app biết anh đã thuộc từ nào.' : 'Đã xong mọi thẻ đến hạn và từ mới của hôm nay.') : h('span', {class:'muted'}, 'Viết tay chiếm khoảng ' + set.wr + '% phiên.' + (set.quiet ? ' Không có bài nghe.' : '')))),
+    sentCard(),
     up.length ? h('section', {class:'panel'},
       h('div', {class:'row spread'}, h('h2', null, 'Xếp trình độ'), h('span', {class:'num muted'}, placed + ' / ' + total + ' mục')),
       h('div', {class:'bar'}, h('i', {style:'width:' + Math.round(placed / total * 100) + '%'})),
@@ -958,20 +962,20 @@ const Ink = {
     return {ok:rating === 3, missing, extra, order, rev, joined, n:N, k:K, rating, cost:dp[K][N] / Math.max(K, N), note:parts.length ? head + '. ' + parts.join('. ') : head};
   }
 };
-function inkCell(size, owner){
+function inkCell(size, owner, lwOpt){
   const c = h('span', {class:'cell fw'}); c.style.width = size + 'px'; c.style.height = size + 'px'; c.innerHTML = GUIDE;
   const cv = document.createElement('canvas'), dpr = window.devicePixelRatio || 1; cv.width = cv.height = Math.round(size * dpr); c.appendChild(cv);
   const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  const lw = Math.max(4, size / 26), ink = cssVar('--ink'), strokes = []; let cur = null, pid = null;
+  const lw = lwOpt || Math.max(4, size / 26), ink = cssVar('--ink'), strokes = []; let cur = null, pid = null;
   const pos = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * size / r.width, (e.clientY - r.top) * size / r.height]; };
   const dot = q => { ctx.fillStyle = ink; ctx.beginPath(); ctx.arc(q[0], q[1], lw / 2, 0, 7); ctx.fill(); };
   const seg = (a, b) => { ctx.strokeStyle = ink; ctx.lineWidth = lw; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); };
   const me = {el:c, strokes, size,
     redraw(){ ctx.clearRect(0, 0, size, size); strokes.forEach(s => { dot(s[0]); for (let i = 1; i < s.length; i++) seg(s[i - 1], s[i]); }); },
     undo(){ strokes.pop(); me.redraw(); }, clear(){ strokes.length = 0; me.redraw(); }};
-  cv.addEventListener('pointerdown', e => { if (owner.locked || pid !== null) return; pid = e.pointerId; try { cv.setPointerCapture(pid); } catch (x) {} cur = [pos(e)]; strokes.push(cur); dot(cur[0]); owner.last = me; if (owner.onInk) owner.onInk(me); e.preventDefault(); });
+  cv.addEventListener('pointerdown', e => { if (owner.locked || pid !== null) return; if (e.pointerType === 'pen') inkCell.pen = Date.now(); else if (e.pointerType === 'touch' && inkCell.pen && Date.now() - inkCell.pen < 12000) return; /* đang viết bằng bút thì bỏ qua bàn tay tì lên màn hình */ pid = e.pointerId; try { cv.setPointerCapture(pid); } catch (x) {} cur = [pos(e)]; strokes.push(cur); dot(cur[0]); owner.last = me; if (owner.onInk) owner.onInk(me); e.preventDefault(); });
   cv.addEventListener('pointermove', e => { if (e.pointerId !== pid || !cur) return; const q = pos(e), a = cur[cur.length - 1]; if (Math.hypot(q[0] - a[0], q[1] - a[1]) < 1.5) return; seg(a, q); cur.push(q); });
-  const end = e => { if (e.pointerId === pid) { pid = null; cur = null; } };
+  const end = e => { if (e.pointerId === pid) { pid = null; cur = null; if (owner.onEnd) owner.onEnd(me); } };
   cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
   ['touchstart', 'touchmove'].forEach(n => cv.addEventListener(n, e => { if (e.cancelable) e.preventDefault(); }, {passive:false}));
   return me;
@@ -1091,13 +1095,40 @@ function playSent(ex, rate){
 }
 function exSent(ex, api){
   const sent = ex.sent, hz = ex.hz, exp = hanChars(hz), dict = ex.kind === 'sd', toks = sent.tp || sent.t || [hz], from = sent.n ? 'Câu số ' + sent.n + ' của thầy. ' : '';
-  /* Lưới ô cố định số cột để hàng mới thêm vào không làm xê dịch các ô đang viết. Nét được ghi theo đơn vị 140 bất kể ô hiện to hay nhỏ. */
-  const W0 = view().clientWidth, L = exp.length, per = W0 >= 700 ? (L > 12 ? 6 : 5) : (W0 >= 520 ? (L > 10 ? 5 : 4) : (L > 9 ? 4 : 3)), size = 140;
-  const owner = {locked:false, last:null}, cells = [], grid = h('div', {class:'sgrid', lang:'zh-Hans', style:'grid-template-columns:repeat(' + per + ',minmax(0,1fr));max-width:' + (per * 150 + (per - 1) * 6) + 'px'}), after = h('div'), hintEl = h('div', {class:'hintline', 'aria-live':'polite'});
+  /* Nét luôn được ghi theo đơn vị 140 cho mỗi ô, bất kể ô hiện to hay nhỏ, nên đổi cỡ ô giữa chừng không làm mất chữ đã viết.
+     Bốn cách viết: ô nhỏ, ô vừa, ô lớn (viết thẳng vào lưới) và bảng lớn (viết từng chữ trên một bảng to, lưới chỉ còn là hàng ô xem lại). */
+  const W0 = view().clientWidth, L = exp.length, size = 140, PAD = 320;
+  let mode = SET().wz; if (mode === 'auto') mode = W0 < 520 ? 'pad' : 'm';
+  const colsFor = m => m === 'pad' ? (W0 >= 700 ? 10 : (W0 >= 520 ? 8 : 6)) : m === 's' ? (W0 >= 700 ? 6 : (W0 >= 520 ? 5 : 4)) : m === 'l' ? (W0 >= 700 ? 3 : 2) : (W0 >= 700 ? (L > 12 ? 6 : 5) : (W0 >= 520 ? 4 : 3));
+  const maxCell = m => m === 'pad' ? 64 : (m === 'l' ? 250 : 150);
+  const owner = {locked:false, last:null}, padOwner = {locked:false, last:null}, cells = [], grid = h('div', {class:'sgrid', lang:'zh-Hans'}), after = h('div'), hintEl = h('div', {class:'hintline', 'aria-live':'polite'});
   const fit = el => { el.style.width = '100%'; el.style.height = 'auto'; el.style.aspectRatio = '1'; return el; };
-  const addRow = () => { for (let k = 0; k < per; k++){ const c = inkCell(size, owner); cells.push(c); grid.appendChild(fit(c.el)); } };
+  const addCells = n => { for (let k = 0; k < n; k++){ const c = inkCell(size, owner); cells.push(c); grid.appendChild(fit(c.el)); c.el.addEventListener('click', () => { if (mode === 'pad' && !owner.locked) select(cells.indexOf(c)); }); } };
+  const addRow = () => addCells(colsFor(mode));
   owner.onInk = c => { if (cells.indexOf(c) >= cells.length - 1 && cells.length < 72) addRow(); };
-  addRow();
+  /* bảng lớn */
+  const pad = inkCell(PAD, padOwner, 7), padLabel = h('span', {class:'muted'}, ''); let active = 0;
+  const toPad = () => { pad.strokes.length = 0; cells[active].strokes.forEach(st => pad.strokes.push(st.map(q => [q[0] * PAD / size, q[1] * PAD / size]))); pad.redraw(); };
+  const fromPad = () => { const c = cells[active]; c.strokes.length = 0; pad.strokes.forEach(st => c.strokes.push(st.map(q => [q[0] * size / PAD, q[1] * size / PAD]))); c.redraw(); owner.last = c; };
+  function select(i){
+    i = Math.max(0, Math.min(71, i)); while (cells.length < i + 2 && cells.length < 72) addCells(1);
+    active = i; cells.forEach((c, k) => c.el.classList.toggle('act', k === i)); toPad(); padLabel.textContent = 'Chữ thứ ' + (i + 1);
+  }
+  padOwner.onEnd = fromPad;
+  const padWrap = h('div', {class:'padwrap'}, fit(pad.el),
+    h('div', {class:'row', style:'justify-content:center'}, h('button', {type:'button', class:'btn', onclick:() => select(active - 1)}, 'Chữ trước'), padLabel, h('button', {type:'button', class:'btn primary', id:'btnNextChar', onclick:() => select(active + 1)}, 'Chữ kế')));
+  const tip = h('p', {class:'fine', style:'text-align:center'});
+  const modeBar = h('div', {class:'row modes', style:'justify-content:center'}, h('span', {class:'muted'}, 'Cỡ ô:'), [['s', 'Nhỏ'], ['m', 'Vừa'], ['l', 'Lớn'], ['pad', 'Bảng lớn']].map(o => h('button', {type:'button', class:'btn small', 'data-m':o[0], onclick:() => { mode = o[0]; META().set.wz = mode; Store.mark('meta'); applyMode(); }}, o[1])));
+  function applyMode(resultView){
+    const m = resultView ? (mode === 'l' ? 'l' : 'm') : mode, n = colsFor(m);
+    grid.style.gridTemplateColumns = 'repeat(' + n + ',minmax(0,1fr))'; grid.style.maxWidth = (n * maxCell(m) + (n - 1) * 6) + 'px';
+    grid.classList.toggle('thumbs', !resultView && mode === 'pad'); padWrap.hidden = !!resultView || mode !== 'pad';
+    Array.from(modeBar.querySelectorAll('button')).forEach(b => b.setAttribute('aria-pressed', String(b.getAttribute('data-m') === mode)));
+    tip.textContent = mode === 'pad' ? 'Viết từng chữ trên bảng lớn rồi bấm Chữ kế. Bấm vào một ô nhỏ để sửa chữ đó. Ô bỏ trống không bị tính.' : 'Mỗi ô một chữ. Viết tới ô cuối thì app tự thêm hàng mới. Ô bỏ trống không bị tính.';
+    if (!resultView && mode === 'pad'){ const i = cells.findIndex(c => !c.strokes.length); select(i < 0 ? cells.length : i); }
+    else cells.forEach(c => c.el.classList.remove('act'));
+  }
+  addCells(Math.max(colsFor(mode), 6)); applyMode();
   let hint = 0; const t0 = Date.now();
   const hintBtn = h('button', {type:'button', class:'btn', onclick:() => {
     if (owner.locked || hint >= 3) return; hint++;
@@ -1107,15 +1138,15 @@ function exSent(ex, api){
     hintBtn.textContent = hint >= 3 ? 'Hết gợi ý' : 'Gợi ý thêm (' + hint + '/3)'; hintBtn.disabled = hint >= 3;
   }}, 'Gợi ý');
   const tools = h('div', {class:'row', style:'justify-content:center'},
-    h('button', {type:'button', class:'btn', onclick:() => { if (!owner.locked && owner.last) owner.last.undo(); }}, 'Bỏ nét vừa viết'),
-    h('button', {type:'button', class:'btn', onclick:() => { if (!owner.locked && owner.last) owner.last.clear(); }}, 'Xoá ô đang viết'),
-    h('button', {type:'button', class:'btn', onclick:() => { if (!owner.locked) cells.forEach(c => c.clear()); }}, 'Xoá hết'),
+    h('button', {type:'button', class:'btn', onclick:() => { if (owner.locked) return; if (mode === 'pad') { pad.undo(); fromPad(); } else if (owner.last) owner.last.undo(); }}, 'Bỏ nét vừa viết'),
+    h('button', {type:'button', class:'btn', onclick:() => { if (owner.locked) return; if (mode === 'pad') { pad.clear(); fromPad(); } else if (owner.last) owner.last.clear(); }}, 'Xoá ô đang viết'),
+    h('button', {type:'button', class:'btn', onclick:() => { if (owner.locked) return; cells.forEach(c => c.clear()); if (mode === 'pad') select(0); }}, 'Xoá hết'),
     hintBtn,
     h('button', {type:'button', class:'btn primary big', id:'btnCheck', onclick:check}, 'Chấm'));
   const inkOnly = c => { c.el.innerHTML = GUIDE + '<svg class="mine" viewBox="0 0 ' + size + ' ' + size + '" aria-hidden="true">' + c.strokes.map(s => '<polyline points="' + (s.length > 1 ? s : [s[0], [s[0][0] + 0.1, s[0][1]]]).map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ') + '"></polyline>').join('') + '</svg>'; };
   async function check(){
     if (owner.locked) return; const written = cells.filter(c => c.strokes.length); if (!written.length) return;
-    owner.locked = true; tools.hidden = true; if (owner.tip) owner.tip.hidden = true;
+    owner.locked = true; padOwner.locked = true; tools.hidden = true; tip.hidden = true; modeBar.hidden = true; applyMode(true);
     const data = []; for (const ch of exp) data.push(await Strokes.get(ch).catch(() => null));
     const ops = sentAlign(written, exp, data, size, SET().strict), allBad = {missing:[], order:[], rev:[]};
     grid.textContent = ''; const cols = [];
@@ -1175,8 +1206,7 @@ function exSent(ex, api){
     ? h('div', {class:'prompt'}, h('p', {class:'ask'}, from + 'Nghe rồi viết lại cả câu bằng chữ Hán. Viết xong mới bấm Chấm.'), h('div', {class:'row', style:'justify-content:center'}, h('button', {type:'button', class:'listen', onclick:() => playSent(ex, 1)}, 'Nghe lại'), h('button', {type:'button', class:'btn ghost', onclick:() => playSent(ex, 0.65)}, 'Nghe chậm')))
     : h('div', {class:'prompt'}, h('p', {class:'ask'}, from + 'Dịch sang tiếng Trung, viết tay cả câu. Viết xong mới bấm Chấm.'), h('div', {class:'mean big', text:sent.m}));
   if (dict) setTimeout(() => playSent(ex, 1), 250);
-  const tip = h('p', {class:'fine', style:'text-align:center'}, 'Mỗi ô một chữ. Viết tới ô cuối thì app tự thêm hàng mới. Ô bỏ trống không bị tính.'); owner.tip = tip;
-  return [prompt, hintEl, grid, tip, tools, after];
+  return [prompt, hintEl, modeBar, grid, padWrap, tip, tools, after];
 }
 /* cùng chữ đó ở hai kiểu chữ in hay gặp trên máy: không chân (Hei) và có chân (Song) */
 function printRow(hz){
@@ -1245,20 +1275,37 @@ function practicePool(src, group){
   else list = shuffle(list);
   return list;
 }
-/* bài tập dịch câu của thầy: làm theo thứ tự, chọn được câu bắt đầu */
+/* luyện viết câu: làm hết câu của thầy theo thứ tự trước, sau đó trộn câu của thầy với các câu khác */
+function sentProgress(){
+  const ts = SENTS.filter(x => x.n).sort((a, b) => a.n - b.n), rec = META().sent || {};
+  const tried = ts.filter(x => rec[x.h] && rec[x.h][0] > 0).length, done = ts.filter(x => rec[x.h] && rec[x.h][1] > 0).length;
+  const next = ts.find(x => !(rec[x.h] && rec[x.h][0] > 0));
+  return {ts, tried, done, next, mixed:ts.length > 0 && !next, others:SENTS.length - ts.length, allDone:SENTS.filter(x => rec[x.h] && rec[x.h][1] > 0).length};
+}
+function startSent(kind, from){
+  const pg = sentProgress(); Snd.unlock();
+  Session.startPractice(pg.mixed && !from ? {kinds:[kind], src:'all', group:'', mins:60, allSents:true, set:'mix'} : {kinds:[kind], src:'all', group:'', mins:60, allSents:true, set:'t', from:from || (pg.next ? pg.next.n : 1)});
+}
+function sentCard(){
+  const pg = sentProgress(); if (!pg.ts.length) return null; const quiet = SET().quiet;
+  return h('section', {class:'panel'},
+    h('div', {class:'row spread'}, h('h2', null, 'Viết câu'), h('span', {class:'muted'}, pg.mixed ? 'Tự viết đúng trọn ' + pg.allDone + ' / ' + SENTS.length + ' câu' : 'Câu của thầy: đã làm ' + pg.tried + ' / ' + pg.ts.length)),
+    h('p', {class:'muted'}, pg.mixed ? 'Đã làm hết câu của thầy. Giờ app trộn câu của thầy với ' + pg.others + ' câu khác, câu chưa làm và câu hay sai lên trước.' : 'Dịch câu thầy ra trên lớp sang tiếng Trung, viết tay cả câu rồi mới chấm. Làm hết ' + pg.ts.length + ' câu này thì app trộn thêm ' + pg.others + ' câu khác.'),
+    h('div', {class:'row'}, h('button', {type:'button', class:'btn primary', id:'btnSentGo', onclick:() => startSent('ws')}, pg.mixed ? 'Dịch câu, viết tay' : 'Viết tiếp câu số ' + pg.next.n),
+      h('button', {type:'button', class:'btn', disabled:quiet, onclick:() => startSent('wd')}, 'Nghe chép, viết tay')));
+}
 function teacherPanel(set){
-  const ts = SENTS.filter(x => x.n).sort((a, b) => a.n - b.n), cs = SENTS.filter(x => !x.n), rec = META().sent || {};
-  if (!ts.length) return null;
-  const done = ts.filter(x => rec[x.h] && rec[x.h][1] > 0).length, next = ts.find(x => !(rec[x.h] && rec[x.h][1] > 0)) || ts[0];
-  const from = h('input', {type:'number', id:'prFrom', class:'sel', min:ts[0].n, max:ts[ts.length - 1].n, value:next.n, inputmode:'numeric', style:'width:90px'});
-  const go = (kind, setName) => { Snd.unlock(); Session.startPractice({kinds:[kind], src:'all', group:'', mins:60, allSents:true, set:setName, from:+from.value || 1}); };
+  const pg = sentProgress(); if (!pg.ts.length) return null;
+  const from = h('input', {type:'number', id:'prFrom', class:'sel', min:pg.ts[0].n, max:pg.ts[pg.ts.length - 1].n, value:pg.next ? pg.next.n : pg.ts[0].n, inputmode:'numeric', style:'width:90px'});
   return h('div', {class:'tpanel'},
-    h('b', null, 'Bài tập dịch câu của thầy'),
-    h('small', {class:'fine'}, ts.length + ' câu, làm theo thứ tự. Đã viết đúng trọn ' + done + ' câu. Bản tiếng Trung do Claude dịch, chưa đối chiếu với đáp án của thầy.'),
-    h('div', {class:'row'}, h('label', {for:'prFrom', class:'muted'}, 'Bắt đầu từ câu số'), from,
-      h('button', {type:'button', class:'btn primary', id:'btnTrySent', onclick:() => go('ws', 't')}, 'Dịch, viết tay'),
-      h('button', {type:'button', class:'btn', disabled:set.quiet, onclick:() => go('wd', 't')}, 'Nghe chép, viết tay')),
-    cs.length ? h('div', {class:'row'}, h('span', {class:'muted'}, cs.length + ' câu ngắn do Claude đặt:'), h('button', {type:'button', class:'btn', id:'btnTryClaude', onclick:() => go('ws', 'c')}, 'Dịch, viết tay'), h('button', {type:'button', class:'btn', disabled:set.quiet, onclick:() => go('wd', 'c')}, 'Nghe chép, viết tay')) : null);
+    h('b', null, 'Viết câu'),
+    h('small', {class:'fine'}, 'Câu của thầy: ' + pg.ts.length + ' câu, đã làm ' + pg.tried + ', viết đúng trọn ' + pg.done + '. Bản tiếng Trung do Claude dịch, chưa đối chiếu với đáp án của thầy. ' + (pg.mixed ? 'Đã làm hết câu của thầy nên app đang trộn thêm ' + pg.others + ' câu khác.' : 'Làm hết câu của thầy thì app trộn thêm ' + pg.others + ' câu khác.')),
+    h('div', {class:'row'}, h('label', {for:'prFrom', class:'muted'}, 'Câu của thầy, bắt đầu từ câu số'), from,
+      h('button', {type:'button', class:'btn primary', id:'btnTrySent', onclick:() => startSent('ws', +from.value || 1)}, 'Dịch, viết tay'),
+      h('button', {type:'button', class:'btn', disabled:set.quiet, onclick:() => startSent('wd', +from.value || 1)}, 'Nghe chép, viết tay')),
+    h('div', {class:'row'}, h('span', {class:'muted'}, 'Trộn mọi câu (' + SENTS.length + ' câu):'),
+      h('button', {type:'button', class:'btn', id:'btnMix', onclick:() => { Snd.unlock(); Session.startPractice({kinds:['ws'], src:'all', group:'', mins:60, allSents:true, set:'mix'}); }}, 'Dịch, viết tay'),
+      h('button', {type:'button', class:'btn', disabled:set.quiet, onclick:() => { Snd.unlock(); Session.startPractice({kinds:['wd'], src:'all', group:'', mins:60, allSents:true, set:'mix'}); }}, 'Nghe chép, viết tay')));
 }
 function viewPractice(){
   const set = SET(), saved = META().set.pr || {}, st = {kinds:new Set(saved.kinds || ['wf', 'ord']), src:saved.src || 'due', group:saved.group || '', mins:saved.mins || 10};
@@ -1288,6 +1335,7 @@ function practiceGen(cfg){
   const pool = practicePool(cfg.src, cfg.group); if (!pool.length && !cfg.allSents) return () => null;
   let sents;
   if (cfg.allSents && cfg.set === 't'){ sents = SENTS.filter(x => x.n).sort((a, b) => a.n - b.n); const i0 = Math.max(0, sents.findIndex(x => x.n >= (cfg.from || 1))); sents = sents.slice(i0).concat(sents.slice(0, i0)); } // câu của thầy: theo đúng thứ tự bài tập
+  else if (cfg.allSents && cfg.set === 'mix'){ const rec = META().sent || {}; sents = SENTS.map(x => { const r = rec[x.h] || [0, 0, 0]; return [r[1] * 2 + r[0] * 0.5 + Math.random(), x]; }).sort((a, b) => a[0] - b[0]).map(a => a[1]); } // trộn mọi câu: câu chưa làm và câu hay sai lên trước
   else sents = shuffle(cfg.allSents ? SENTS.filter(x => !x.n) : readySents());
   const phrases = shuffle(pool.filter(it => it.chars.length >= 3));
   const kinds = cfg.kinds.filter(k => !((k === 'l' || k === 'wd') && SET().quiet)); let ki = 0, pi = 0, si = 0, fi = 0, fails = 0;
@@ -1591,6 +1639,9 @@ function viewSettings(){
       h('div', {class:'field'}, h('label', {for:'setNd'}, 'Từ mới mỗi ngày: ', ndOut), h('input', {type:'range', id:'setNd', min:5, max:40, step:5, value:set.nd, oninput:e => { ndOut.textContent = e.currentTarget.value + ' từ'; save('nd', +e.currentTarget.value); }})),
       h('div', {class:'field'}, h('span', {style:'font-weight:600'}, 'Bài viết trong phiên học'),
         h('div', {class:'row'}, [['mix', 'Bậc 1 tô từng nét, bậc 2 viết cả từ rồi chấm'], ['net', 'Luôn chấm từng nét'], ['cau', 'Luôn viết cả từ rồi chấm']].map(o => h('button', {type:'button', class:'btn', 'aria-pressed':String(set.wm === o[0]), onclick:e => { save('wm', o[0]); Array.from(e.currentTarget.parentNode.children).forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); }}, o[1])))),
+      h('div', {class:'field'}, h('span', {style:'font-weight:600'}, 'Ô viết khi viết tay cả câu'),
+        h('div', {class:'row'}, [['auto', 'Tự động theo màn hình'], ['s', 'Ô nhỏ'], ['m', 'Ô vừa'], ['l', 'Ô lớn'], ['pad', 'Bảng lớn, viết từng chữ']].map(o => h('button', {type:'button', class:'btn', 'aria-pressed':String(set.wz === o[0]), onclick:e => { save('wz', o[0]); Array.from(e.currentTarget.parentNode.children).forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); }}, o[1]))),
+        h('small', {class:'fine'}, 'Trên điện thoại, Tự động dùng bảng lớn để ngón tay viết thoải mái. Đổi được ngay trong lúc làm bài.')),
       sw('setStrict', 'Chấm nét chặt theo chữ khải (mặc định chấm thoáng, nhận cả nét kiểu chữ in)', 'strict', set.strict),
       sw('setQuiet', 'Chế độ yên lặng: bỏ bài nghe, không tự phát âm', 'quiet', set.quiet),
       sw('setSnd', 'Tự phát âm khi hiện đáp án', 'snd', set.snd), sw('setAuto', 'Tự sang thẻ kế khi trả lời đúng', 'auto', set.auto), sw('setNames', 'Học cả năm tên riêng', 'names', set.names),
@@ -1625,7 +1676,7 @@ async function boot(){
     show('err', [h('h1', null, 'Chưa mở được sổ'), h('p', {class:'muted'}, 'Không đọc được dữ liệu (' + ((e && (e.code || e.message)) || 'lỗi') + '). Tiến độ của anh không bị ghi đè. Kiểm tra mạng rồi thử lại.'), h('div', {class:'row'}, h('button', {type:'button', class:'btn primary big', onclick:() => { view().textContent = ''; view().appendChild(h('p', {class:'muted', id:'bootmsg'}, 'Đang mở sổ…')); boot(); }}, 'Thử lại'))]);
   }
 }
-window.__app = {SENTS:() => SENTS, exSent, sentAlign, exTones, Cloud, Ink, exFree, practiceGen, readySents, SET, viewPractice, viewSettings, Store, V, Session, Strokes, Snd, segment, grade, stats, P, META, viewHome, viewPlacement, applyPlacement, items, newQueue, dueList, unplaced};
+window.__app = {sentProgress, startSent, SENTS:() => SENTS, exSent, sentAlign, exTones, Cloud, Ink, exFree, practiceGen, readySents, SET, viewPractice, viewSettings, Store, V, Session, Strokes, Snd, segment, grade, stats, P, META, viewHome, viewPlacement, applyPlacement, items, newQueue, dueList, unplaced};
 boot();
 })();
 </script>
