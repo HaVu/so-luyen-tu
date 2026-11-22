@@ -430,6 +430,11 @@ body{background-color:var(--paper);background-image:radial-gradient(ellipse at 2
 :root[data-theme="dark"] .cd.done,:root[data-theme="dark"] .cd.empty{background:none}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .cd.done,:root:not([data-theme="light"]) .cd.empty{background:none}}
 .cd.done,.cd.empty{background:none}
+.groups{gap:0}
+.grow{display:flex;flex-direction:column;gap:6px;padding:12px 4px;border-top:1px solid var(--line)}
+.grow:first-child{border-top:0}
+.gname b{font-size:17px}
+.gsample{font-family:var(--han);font-size:19px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 </style>
 </head>
@@ -845,8 +850,8 @@ function viewHome(){
     up.length ? h('section', {class:'panel'},
       h('div', {class:'row spread'}, h('h2', null, 'Xếp trình độ'), h('span', {class:'num muted'}, placed + ' / ' + total + ' mục')),
       h('div', {class:'bar'}, h('i', {style:'width:' + Math.round(placed / total * 100) + '%'})),
-      h('p', {class:'muted'}, 'Mỗi mục anh bấm Biết hoặc Chưa biết. Còn ' + up.length + ' mục, khoảng ' + Math.max(1, Math.round(up.length * 4 / 60)) + ' phút, dừng giữa chừng được.'),
-      h('div', {class:'row'}, h('button', {type:'button', class:'btn' + (canStart ? '' : ' primary big'), onclick:() => viewPlacement()}, placed ? 'Xếp tiếp' : 'Bắt đầu xếp trình độ'))) : null,
+      h('p', {class:'muted'}, 'Còn ' + up.length + ' mục chưa xếp. Chọn theo từng nhóm (đã biết hay từ mới) cho nhanh, nhóm nào chưa chắc thì xếp từng từ.'),
+      h('div', {class:'row'}, h('button', {type:'button', class:'btn' + (canStart ? '' : ' primary big'), onclick:() => viewPlaceGroups()}, placed ? 'Xếp tiếp theo nhóm' : 'Xếp trình độ theo nhóm'), placed ? h('button', {type:'button', class:'btn', onclick:() => viewPlacement()}, 'Xếp tiếp từng từ') : null)) : null,
     h('section', {class:'panel'}, h('h2', null, 'Bốn kỹ năng'),
       h('table', {class:'sk'}, h('thead', null, h('tr', null, h('th', null, 'Kỹ năng'), h('th', null, 'Đã học'), h('th', null, ''), h('th', null, 'Nhớ đúng 14 ngày'))), h('tbody', null, rows)),
       h('p', {class:'muted'}, 'Kỹ năng nhớ đúng dưới 80% được ưu tiên trong phiên. Hẹn đến hết ngày mai: ' + st.tomorrow + ' thẻ.')),
@@ -1939,6 +1944,39 @@ function writeStylePanel(set, save){
     h('small', {class:'fine'}, 'Chữ máy tính: chữ trong app hiện giống chữ đọc trên điện thoại và trang web. Bài viết chấm thoáng: nét thẳng thay nét cong, nét không móc, hai nét viết liền hoặc một nét tách đôi như chữ in đều được tính đúng. Bản xem thứ tự nét vẫn là chữ khải.'));
 }
 
+/* ---------- xếp trình độ theo nhóm (22/11/2026): mỗi nhóm chọn Đã biết, Từ mới, hoặc Xếp từng từ ---------- */
+function groupOf(it){ const g = it.g || 'Khác'; return g.indexOf('Phó từ') === 0 ? 'Phó từ' : g; }
+function viewPlaceGroups(){
+  const left = unplaced(), groups = new Map();
+  left.forEach(it => { const g = groupOf(it); if (!groups.has(g)) groups.set(g, []); groups.get(g).push(it); });
+  if (!left.length) return viewHome();
+  const pick = {}; const rows = [];
+  const sum = h('p', {class:'muted', role:'status'});
+  const paintSum = () => { let k = 0, n = 0, e = 0; groups.forEach((its, g) => { const c = pick[g] || 'each'; if (c === 'known') k += its.length; else if (c === 'new') n += its.length; else e += its.length; }); sum.textContent = 'Đã biết: ' + k + ' mục · Từ mới: ' + n + ' mục · Xếp từng từ: ' + e + ' mục.'; };
+  Array.from(groups.entries()).sort((a, b) => b[1].length - a[1].length).forEach(([g, its]) => {
+    const btns = [['known', 'Đã biết'], ['new', 'Từ mới'], ['each', 'Xếp từng từ']].map(o => h('button', {type:'button', class:'btn small', 'aria-pressed':String(o[0] === 'each'), onclick:e => { pick[g] = o[0]; Array.from(e.currentTarget.parentNode.children).forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); paintSum(); }}, o[1]));
+    rows.push(h('div', {class:'grow'},
+      h('div', {class:'gname'}, h('b', null, g), h('span', {class:'muted num'}, ' ' + its.length + ' mục')),
+      h('div', {class:'gsample', lang:'zh-Hans'}, its.slice(0, 8).map(it => it.h).join('　') + (its.length > 8 ? ' …' : '')),
+      h('div', {class:'row'}, btns)));
+  });
+  const apply = () => {
+    let k = 0, n = 0;
+    groups.forEach((its, g) => { const c = pick[g]; if (c === 'known') its.forEach(it => { applyPlacement(it, true); k++; }); else if (c === 'new') its.forEach(it => { META().place[it.h] = 0; n++; }); });
+    Store.mark('meta'); Store.flush();
+    if (unplaced().length) viewPlacement(); else viewHome();
+  };
+  show('place', [
+    h('section', {class:'panel'},
+      h('h1', null, 'Xếp trình độ theo nhóm'),
+      h('p', {class:'muted'}, 'Mỗi nhóm chọn một trong ba: Đã biết (app hẹn ôn rải trong 10 ngày, trả lời sai thì tự học lại), Từ mới (vào hàng chờ, mỗi ngày học vài từ), hoặc Xếp từng từ (bấm Biết hay Chưa biết cho từng mục sau bước này).'),
+      sum),
+    h('section', {class:'panel groups'}, rows),
+    h('div', {class:'row', style:'justify-content:center'}, h('button', {type:'button', class:'btn primary big', onclick:apply}, 'Áp dụng'), h('button', {type:'button', class:'btn big', onclick:() => viewPlacement()}, 'Bỏ qua, xếp từng từ'))
+  ]);
+  paintSum();
+}
+
 
 /* ================= phiên học ================= */
 const Session = {
@@ -2152,7 +2190,7 @@ async function boot(){
     show('err', [h('h1', null, 'Chưa mở được sổ'), h('p', {class:'muted'}, 'Không đọc được dữ liệu (' + ((e && (e.code || e.message)) || 'lỗi') + '). Tiến độ của anh không bị ghi đè. Kiểm tra mạng rồi thử lại.'), h('div', {class:'row'}, h('button', {type:'button', class:'btn primary big', onclick:() => { view().textContent = ''; view().appendChild(h('p', {class:'muted', id:'bootmsg'}, 'Đang mở sổ…')); boot(); }}, 'Thử lại'))]);
   }
 }
-window.__app = {sentProgress, startSent, SENTS:() => SENTS, exSent, sentAlign, exTones, Cloud, Ink, exFree, practiceGen, readySents, SET, viewPractice, viewSettings, Store, V, Session, Strokes, Snd, segment, grade, stats, P, META, viewHome, viewPlacement, applyPlacement, items, newQueue, dueList, unplaced};
+window.__app = {sentProgress, startSent, SENTS:() => SENTS, exSent, sentAlign, exTones, Cloud, Ink, exFree, practiceGen, readySents, SET, viewPractice, viewSettings, Store, V, Session, Strokes, Snd, segment, grade, stats, P, META, viewHome, viewPlacement, viewPlaceGroups, applyPlacement, items, newQueue, dueList, unplaced};
 boot();
 })();
 </script>
