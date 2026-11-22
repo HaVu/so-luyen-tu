@@ -623,8 +623,6 @@ html[data-art] .opt.right,html[data-art] .tb button.right,html[data-art] .tok.ri
 :root[data-art] .bar i,:root[data-art] .bar.brush i{box-shadow:inset 0 2px 1px rgba(255,255,255,.55),inset 0 -3px 3px rgba(0,0,0,.18)}
 :root[data-art="diemtam"]{--bar-bg:linear-gradient(180deg,#d9c39c,#efe0c2 40%,#e4d0ab);
   --bar-fill:radial-gradient(ellipse 3px 60% at 50% 50%,rgba(60,100,30,.75),transparent) 0 0/38px 100% repeat-x,linear-gradient(90deg,transparent 0 33px,rgba(255,255,230,.65) 33px 35px,transparent 35px) 0 0/38px 100% repeat-x,linear-gradient(180deg,#d7f2ad 0%,#9fd46c 28%,#6fae48 62%,#4e8a30 100%)}
-:root[data-art="diemtam"] .bar i,:root[data-art="diemtam"] .bar.brush i{height:16px;margin-top:-1.5px;border-radius:9px;box-shadow:inset 0 3px 1px rgba(255,255,255,.55),inset 0 -3px 3px rgba(30,60,10,.35),0 2px 2px rgba(60,40,20,.25)}
-:root[data-art="diemtam"] .bar,:root[data-art="diemtam"] .bar.brush{border:1.5px solid #b79664}
 :root[data-art="gom"]{--bar-bg:var(--outline);--bar-fill:linear-gradient(180deg,#5d84c8,#2c579f 60%,#1b3b78)}
 
 :root[data-art="taphoa"]{
@@ -638,6 +636,10 @@ html[data-art] .opt.right,html[data-art] .tb button.right,html[data-art] .tok.ri
 }
 :root[data-art="taphoa"] .top{background-size:100% 100%}
 :root[data-art="taphoa"] .hero .dueline,:root[data-art="taphoa"] .hero .fine,:root[data-art="taphoa"] .hero h1{color:#3d2a08}
+
+:root[data-art][data-has~="bar1"] .bar i,:root[data-art][data-has~="bar1"] .bar.brush i{box-shadow:none}
+:root[data-art="diemtam"] .top{background-size:100% 100%;padding-top:16px}
+:root[data-art="gom"]{--bar-cap:40; --bar1-cap:30; --a-tile:url(skin/gom/card.webp); --tile-slice:64; --tile-w:14px}
 
 </style>
 </head>
@@ -2424,9 +2426,9 @@ function nhacPanel(){
 const SKINS = [['gom', 'Gốm làng', '#2c579f'], ['diemtam', 'Tiệm điểm tâm', '#e3bd83'], ['trasua', 'Tiệm trà sữa', '#86c9ee'], ['taphoa', 'Tạp hoá xưa', '#c8503a']];
 /* phong cách dựng bằng ảnh: hình dán mép trang (s1, s2 hai góc trên; s3, s4 hai góc dưới; s5 đến s9 rải hai bên) */
 const ART = {
-  diemtam:{has:'btn btn1 btn2 btn3 card cell hero seal sealbg stk1 stk2 tab tab1 tile ic reo', deco:['d4', 'd4', 'm-vui', 'd5', 'd7', 'd3', 'd2', 'd1', 'd8']},
+  diemtam:{has:'bar bar1 btn btn1 btn2 btn3 card cell head hero seal sealbg stk1 stk2 tab tab1 ic reo tile', deco:['d4', 'd4', 'm-vui', 'd5', 'd7', 'd3', 'd2', 'd1', 'd8']},
   trasua:{has:'bar bar1 bg btn btn1 btn2 btn3 card cell day head hero seal sealbg stk1 stk2 tab tab1 tag tile ic reo', deco:['d4', 'd2', 'm-vui', 'd1', 'd3', 'd5', 'd6', 'd8', 'd7']},
-  gom:{has:'btn btn1 btn2 btn3 card head hero plate stk1 stk2 reo', deco:['d2', 'd6', 'm-ngu', 'd3', 'd5', 'd4', 'd7', 'd8', 'd10']},
+  gom:{has:'bar bar1 btn btn1 btn2 btn3 card cell day head hero plate seal sealbg stk1 stk2 tab tab1 tag tile ic reo', deco:['d2', 'd6', 'm-ngu', 'd3', 'd5', 'd4', 'd7', 'd8', 'd10']},
   taphoa:{has:'bar bar1 btn btn1 btn2 btn3 card head hero stk1 stk2 tile ic reo', deco:['d3', 'd4', 'm-vui', 'd10', 'd8', 'd2', 'd5', 'd9', 'd7']}
 };
 function artNow(){ const sk = skinNow(); if (!ART[sk] || ART[sk].off) return null; if (sk === 'gom') { let t = 'light'; try { t = META().set.theme || 'light'; } catch (e) {} if (t !== 'light') return null; } return sk; }
