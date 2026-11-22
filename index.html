@@ -573,6 +573,17 @@ body{background-color:var(--paper);background-image:radial-gradient(ellipse at 2
 :root[data-skin="taphoa"] .deco .d-check{left:0;right:0;bottom:0;height:22px;background:repeating-linear-gradient(90deg,rgba(200,80,58,.55) 0 11px,transparent 11px 22px),repeating-linear-gradient(0deg,rgba(200,80,58,.45) 0 11px,#fbf4ea 11px 22px);opacity:.8}
 @media (max-width:600px){:root[data-skin="taphoa"] .deco .d-b{width:96px}:root[data-skin="taphoa"] .deco .d-a{width:58px;left:-18px}:root[data-skin="taphoa"] .deco .d-c{width:70px;right:-24px}:root[data-skin="taphoa"] .deco>div{opacity:.75}}
 
+/* chụp bài viết trên giấy */
+.paper{display:flex;flex-direction:column;gap:10px}
+.paperintro p{text-align:center;color:var(--muted)}
+.paperres{display:flex;flex-direction:column;gap:10px;align-items:center}
+.paperchars{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.paperchars .pc{font-family:var(--han);font-size:30px;width:52px;height:52px;border-radius:10px;border:2px solid var(--line);background:var(--card);color:var(--ink);padding:0;cursor:pointer}
+.paperchars .pc.ok{border-color:var(--ok);background:var(--ok-bg);color:var(--ok)}
+.paperchars .pc.near{border-color:var(--warn);background:var(--warn-bg);color:var(--warn)}
+.paperchars .pc.bad{border-color:var(--bad);background:var(--bad-bg);color:var(--bad)}
+.paperimg{max-width:100%;border-radius:10px;border:1.5px solid var(--line);box-shadow:0 3px 0 var(--line2)}
+
 </style>
 </head>
 <body>
@@ -1604,6 +1615,7 @@ function exSent(ex, api){
     h('button', {type:'button', class:'btn', onclick:() => { if (owner.locked) return; if (mode === 'pad') { pad.clear(); fromPad(); } else if (owner.last) owner.last.clear(); }}, 'Xoá ô đang viết'),
     h('button', {type:'button', class:'btn', onclick:() => { if (owner.locked) return; cells.forEach(c => c.clear()); if (mode === 'pad') select(0); }}, 'Xoá hết'),
     hintBtn,
+    h('button', {type:'button', class:'btn', onclick:() => paperMode()}, 'Viết giấy, chụp chấm'),
     h('button', {type:'button', class:'btn primary big', id:'btnCheck', onclick:check}, 'Chấm'));
   const inkOnly = c => { c.el.innerHTML = GUIDE + '<svg class="mine" viewBox="0 0 ' + size + ' ' + size + '" aria-hidden="true">' + c.strokes.map(s => '<polyline points="' + (s.length > 1 ? s : [s[0], [s[0][0] + 0.1, s[0][1]]]).map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ') + '"></polyline>').join('') + '</svg>'; };
   async function check(){
@@ -1663,12 +1675,39 @@ function exSent(ex, api){
     after.appendChild(nextRow(go)); KEYS = {Enter:go};
     if (!dict && SET().snd) playSent(ex, 1);
   }
+  /* viết trên giấy rồi chụp ảnh để chấm (paperPanel trong v3.js) */
+  const paperBox = h('div');
+  function paperMode(){
+    if (owner.locked) return; owner.locked = true; padOwner.locked = true;
+    [modeBar, grid, padWrap, tip, tools].forEach(el => { el.dataset.was = el.hidden ? '1' : ''; el.hidden = true; });
+    paperBox.textContent = '';
+    paperBox.appendChild(paperPanel({exp, hint:() => hint,
+      onBack:() => { paperBox.textContent = ''; owner.locked = false; padOwner.locked = false; [modeBar, grid, padWrap, tip, tools].forEach(el => { el.hidden = el.dataset.was === '1'; }); },
+      onDone:(rs, perfect) => {
+        ex.fxDone = true;
+        const ref = h('div', {class:'refline', lang:'zh-Hans'}); let j0 = 0;
+        toks.forEach(t => { const n = hanChars(t).length; if (!n) { ref.appendChild(h('span', {class:'punc'}, t)); return; } const ok = rs.slice(j0, j0 + n).every(r => r >= 2); j0 += n; ref.appendChild(h('span', {class:'tok ' + (ok ? 'ok' : 'bad')}, t)); });
+        after.appendChild(h('div', {class:'info'}, h('small', {class:'fine'}, 'Câu mẫu. Từ tô xanh là từ anh viết được, tô đỏ là từ cần xem lại.'), ref, pmLine(sent.p, sent.m),
+          h('div', {class:'row acts'}, h('button', {type:'button', class:'btn', onclick:() => playSent(ex, 1)}, 'Nghe'), h('button', {type:'button', class:'btn', onclick:() => playSent(ex, 0.65)}, 'Nghe chậm'), flagBtn(hz))));
+        const go = () => commitRs(rs, perfect);
+        after.appendChild(nextRow(go)); KEYS = {Enter:go};
+        if (!dict && SET().snd) playSent(ex, 1);
+      }}));
+  }
+  function commitRs(rs, perfect){
+    const worst = {}; exp.forEach((ch, j) => { worst[ch] = Math.min(worst[ch] || 4, rs[j]); });
+    const sec = (Date.now() - t0) / 1000 / Math.max(1, Object.keys(worst).length);
+    Object.keys(worst).forEach(ch => { ((ex.hard && ex.hard.indexOf(ch) >= 0) ? api.grade : api.soft)('w', ch, worst[ch], sec); });
+    logOnly(dict ? 'd' : 'c', perfect, 0);
+    const S2 = META().sent || (META().sent = {}), rec = S2[hz] || (S2[hz] = [0, 0, 0]); rec[0]++; if (perfect && hint < 2) rec[1]++; rec[2] = Math.round(Date.now() / 60000); Store.mark('meta');
+    api.next();
+  }
   KEYS = {Enter:check};
   const prompt = dict
     ? h('div', {class:'prompt'}, h('p', {class:'ask'}, from + 'Nghe rồi viết lại cả câu bằng chữ Hán. Viết xong mới bấm Chấm.'), h('div', {class:'row', style:'justify-content:center'}, h('button', {type:'button', class:'listen', onclick:() => playSent(ex, 1)}, 'Nghe lại'), h('button', {type:'button', class:'btn ghost', onclick:() => playSent(ex, 0.65)}, 'Nghe chậm')))
     : h('div', {class:'prompt'}, h('p', {class:'ask'}, from + 'Dịch sang tiếng Trung, viết tay cả câu. Viết xong mới bấm Chấm.'), h('div', {class:'mean big', text:sent.m}));
   if (dict) setTimeout(() => playSent(ex, 1), 250);
-  return [prompt, hintEl, modeBar, grid, padWrap, tip, tools, after];
+  return [prompt, hintEl, modeBar, grid, padWrap, tip, tools, paperBox, after];
 }
 /* cùng chữ đó ở hai kiểu chữ in hay gặp trên máy: không chân (Hei) và có chân (Song) */
 function printRow(hz){
@@ -2036,7 +2075,7 @@ function calendarCard(){
 /* ---------- mèo đất nung nằm ngủ, chỉ để trang trí ---------- */
 function catEl(){
   const e = h('span', {class:'cat', 'aria-hidden':'true'});
-  const sk = skinNow(); if (sk === 'trasua' || sk === 'taphoa') { e.classList.add('mascot'); e.innerHTML = MASCOT[sk === 'trasua' ? 'hamster' : 'rooster']; return e; }
+  const sk = skinNow(), mk = {trasua:'hamster', taphoa:'rooster', diemtam:'bao'}[sk]; if (mk) { e.classList.add('mascot'); e.innerHTML = MASCOT[mk]; return e; }
   e.innerHTML = '<svg viewBox="0 0 150 96"><ellipse class="sh" cx="78" cy="88" rx="62" ry="6"/>'
     + '<path class="b" d="M26 72 C22 44 52 26 86 29 C118 32 134 52 130 72 C128 84 110 88 78 88 C46 88 28 84 26 72Z"/>'
     + '<path class="hl" d="M70 36 C84 31 104 33 114 40"/>'
@@ -2348,6 +2387,7 @@ const DECO2 = {
 };
 function decoHTML(skin){
   if (skin === 'trasua') return '<div class="d-a">' + DECO2.boba + '</div><div class="d-b">' + DECO2.macaron + '</div><div class="d-c">' + DECO2.cake + '</div><div class="d-d">' + DECO2.star + '</div><div class="d-e">' + DECO2.star + '</div><div class="d-f">' + DECO2.macaron + '</div><div class="d-pearls"></div>';
+  if (skin === 'diemtam') return '<div class="d-a">' + FOOD.steamer + '</div><div class="d-b">' + FOOD.lantern + '</div><div class="d-c">' + FOOD.siumai + '</div><div class="d-d">' + FOOD.hagow + '</div><div class="d-e">' + FOOD.tart + '</div><div class="d-f">' + FOOD.leaf + '</div><div class="d-g">' + FOOD.bao(true) + '</div><div class="d-h">' + FOOD.sticks + '</div><div class="d-i">' + FOOD.lantern + '</div><div class="d-wicker"></div>';
   if (skin === 'taphoa') return '<div class="d-a">' + DECO2.lamp + '</div><div class="d-b">' + DECO2.cloth + '</div><div class="d-c">' + DECO2.mug + '</div><div class="d-check"></div>';
   return null;
 }
@@ -2357,7 +2397,10 @@ function applySkin(){
   r.setAttribute('data-skin', skin);
   if (skin !== 'gom') r.setAttribute('data-theme', 'light');
   if (d) { if (decoGom == null) decoGom = d.innerHTML; const x = decoHTML(skin); d.innerHTML = x || decoGom; d.setAttribute('data-for', skin); }
-  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', {gom:'#fbf7ee', trasua:'#f0d7bb', taphoa:'#c8503a'}[skin] || '#fbf7ee');
+  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', {gom:'#fbf7ee', trasua:'#f0d7bb', taphoa:'#c8503a', diemtam:'#9a6142'}[skin] || '#fbf7ee');
+  /* hình dán cho thẻ chính và màn xong buổi */
+  const uri = s => 'url("data:image/svg+xml,' + encodeURIComponent(s) + '")';
+  if (skin === 'diemtam') { r.style.setProperty('--stk1', uri(FOOD.steamer)); r.style.setProperty('--stk2', uri(FOOD.siumai)); r.style.setProperty('--stk3', uri(FOOD.hagow)); r.style.setProperty('--stk4', uri(FOOD.tart)); }
 }
 function skinPanelRow(save){
   const cur = skinNow();
@@ -2366,6 +2409,183 @@ function skinPanelRow(save){
       h('i', {class:'sw', style:'background:' + o[2]}), o[1]))),
     h('small', {class:'fine'}, cur === 'gom' ? 'Mỗi người chọn phong cách mình thích, lưu theo tài khoản.' : 'Phong cách này chỉ có bản sáng. Chọn Gốm làng để dùng giao diện tối.'));
 }
+
+/* ================= đọc chữ viết tay từ ảnh chụp (PP-OCRv3 chạy ngay trên máy bằng onnxruntime-web) =================
+   Tệp nặng tải lần đầu khi dùng: lib/ort/ (bộ chạy wasm, 11 MB), ocr/det.onnx (tìm dòng chữ, 2,4 MB), ocr/rec.onnx (đọc chữ, 10,7 MB), ocr/keys.txt.
+   sw.js giữ các tệp này lâu dài nên những lần sau dùng được cả khi mất mạng. */
+const Ocr = {
+  st:null, det:null, rec:null, keys:null,
+  script(src){ return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('Không tải được ' + src)); document.head.appendChild(s); }); },
+  async buf(url, prog){
+    const r = await fetch(url); if (!r.ok) throw new Error('Không tải được ' + url);
+    const total = +r.headers.get('content-length') || 0; if (!r.body || !total) { const b = await r.arrayBuffer(); prog(b.byteLength, b.byteLength); return b; }
+    const rd = r.body.getReader(), parts = []; let got = 0;
+    for (;;) { const x = await rd.read(); if (x.done) break; parts.push(x.value); got += x.value.length; prog(got, total); }
+    const out = new Uint8Array(got); let o = 0; parts.forEach(p => { out.set(p, o); o += p.length; }); return out.buffer;
+  },
+  load(onProg){
+    if (this.st) return this.st;
+    const files = [['lib/ort/ort-wasm-simd-threaded.wasm', 11.25], ['ocr/det.onnx', 2.43], ['ocr/rec.onnx', 10.69]], all = files.reduce((a, f) => a + f[1], 0), done = files.map(() => 0);
+    const tell = () => { if (onProg) onProg(Math.min(99, Math.round(done.reduce((a, b) => a + b, 0) / all * 100))); };
+    this.st = (async () => {
+      if (!window.ort) await this.script('lib/ort/ort.wasm.min.js');
+      const bufs = []; for (let i = 0; i < files.length; i++) bufs.push(await this.buf(files[i][0], (g, t) => { done[i] = files[i][1] * g / t; tell(); }));
+      ort.env.wasm.numThreads = 1; ort.env.wasm.wasmPaths = new URL('lib/ort/', location.href).href; ort.env.wasm.wasmBinary = bufs[0];
+      this.det = await ort.InferenceSession.create(bufs[1], {executionProviders:['wasm']});
+      this.rec = await ort.InferenceSession.create(bufs[2], {executionProviders:['wasm']});
+      const k = await (await fetch('ocr/keys.txt')).text(); this.keys = ['', ...k.split('\n').filter((x, i, a) => !(i === a.length - 1 && x === '')), ' '];
+      return true;
+    })();
+    this.st.catch(() => { this.st = null; });
+    return this.st;
+  },
+  /* ảnh (File hoặc Blob) → canvas, cạnh dài tối đa 1600 px, xoay đúng chiều theo EXIF */
+  async canvasOf(file){
+    let bmp; try { bmp = await createImageBitmap(file, {imageOrientation:'from-image'}); } catch (e) { bmp = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = URL.createObjectURL(file); }); }
+    const W0 = bmp.width, H0 = bmp.height, k = Math.min(1, 1600 / Math.max(W0, H0)), cv = document.createElement('canvas');
+    cv.width = Math.round(W0 * k); cv.height = Math.round(H0 * k); cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height); return cv;
+  },
+  tensorBGR(cv, x, y, w, h, outW, outH, padW, mean, std){
+    const c = document.createElement('canvas'); c.width = outW; c.height = outH; const g = c.getContext('2d'); g.drawImage(cv, x, y, w, h, 0, 0, outW, outH);
+    const d = g.getImageData(0, 0, outW, outH).data, W = padW || outW, n = W * outH, a = new Float32Array(3 * n);
+    for (let yy = 0; yy < outH; yy++) for (let xx = 0; xx < outW; xx++){ const p = (yy * outW + xx) * 4, q = yy * W + xx; for (let ch = 0; ch < 3; ch++){ const v = d[p + 2 - ch] / 255; a[ch * n + q] = (v - mean[ch]) / std[ch]; } }
+    return new ort.Tensor('float32', a, [1, 3, outH, W]);
+  },
+  async boxes(cv){
+    const W = cv.width, H = cv.height, r = Math.min(W, H) < 736 ? 736 / Math.min(W, H) : 1;
+    const rw = Math.max(32, Math.round(W * r / 32) * 32), rh = Math.max(32, Math.round(H * r / 32) * 32);
+    const t = this.tensorBGR(cv, 0, 0, W, H, rw, rh, 0, [0.485, 0.456, 0.406], [0.229, 0.224, 0.225]);
+    const out = await this.det.run({[this.det.inputNames[0]]:t}), P = out[this.det.outputNames[0]].data;
+    const bm = new Uint8Array(rw * rh);
+    for (let y = 0; y < rh; y++) for (let x = 0; x < rw; x++){ const i = y * rw + x; if (P[i] > 0.3 || (x > 0 && P[i - 1] > 0.3) || (y > 0 && P[i - rw] > 0.3) || (x > 0 && y > 0 && P[i - rw - 1] > 0.3)) bm[i] = 1; }
+    const seen = new Uint8Array(rw * rh), res = [], stack = [];
+    for (let s = 0; s < rw * rh; s++){
+      if (!bm[s] || seen[s]) continue; seen[s] = 1; stack.push(s); let x0 = rw, x1 = 0, y0 = rh, y1 = 0, sum = 0, cnt = 0;
+      while (stack.length){ const i = stack.pop(), x = i % rw, y = (i / rw) | 0; sum += P[i]; cnt++; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++){ const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= rw || yy >= rh) continue; const j = yy * rw + xx; if (bm[j] && !seen[j]) { seen[j] = 1; stack.push(j); } } }
+      const bw = x1 - x0 + 1, bh = y1 - y0 + 1; if (Math.min(bw, bh) < 3 || cnt < 12 || sum / cnt < 0.5) continue;
+      const dist = bw * bh * 1.6 / (2 * (bw + bh)), sx = W / rw, sy = H / rh;
+      const bx = Math.max(0, (x0 - dist) * sx), by = Math.max(0, (y0 - dist) * sy), ex = Math.min(W, (x1 + 1 + dist) * sx), ey = Math.min(H, (y1 + 1 + dist) * sy);
+      if (Math.min(ex - bx, ey - by) < 5) continue; res.push({x:bx, y:by, w:ex - bx, h:ey - by});
+    }
+    /* thứ tự đọc: gom thành dòng theo chiều dọc, trong dòng xếp trái sang phải */
+    res.sort((a, b) => (a.y + a.h / 2) - (b.y + b.h / 2)); const lines = [];
+    res.forEach(b => { const L = lines.find(l => Math.abs((l.cy) - (b.y + b.h / 2)) < Math.max(l.h, b.h) * 0.5); if (L) { L.items.push(b); L.cy = (L.cy * (L.items.length - 1) + b.y + b.h / 2) / L.items.length; } else lines.push({cy:b.y + b.h / 2, h:b.h, items:[b]}); });
+    return lines.map(l => l.items.sort((a, b) => a.x - b.x)).reduce((a, l) => a.concat(l), []);
+  },
+  async readBox(cv, b){
+    const ratio = b.w / b.h, imgW = Math.min(1600, Math.max(320, Math.ceil(48 * ratio))), w = Math.min(imgW, Math.ceil(48 * ratio));
+    const t = this.tensorBGR(cv, b.x, b.y, b.w, b.h, w, 48, imgW, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5]);
+    const out = await this.rec.run({[this.rec.inputNames[0]]:t}), o = out[this.rec.outputNames[0]], [, T, C] = o.dims, P = o.data, chars = []; let prev = -1;
+    for (let s = 0; s < T; s++){
+      let best = 0, bp = -1; for (let c = 0; c < C; c++){ const v = P[s * C + c]; if (v > bp) { bp = v; best = c; } }
+      if (best !== 0 && best !== prev){
+        const top = []; for (let c = 1; c < C; c++){ const v = P[s * C + c]; if (v > 0.01) top.push([v, c]); } top.sort((a, b) => b[0] - a[0]);
+        chars.push({c:this.keys[best] || '', p:bp, cands:top.slice(0, 6).map(x => this.keys[x[1]])});
+      }
+      prev = best;
+    }
+    return chars;
+  },
+  async read(file){
+    const cv = await this.canvasOf(file), bs = await this.boxes(cv), out = [];
+    for (const b of bs.slice(0, 40)){ const cs = await this.readBox(cv, b); if (cs.length) out.push({box:b, chars:cs}); }
+    return {canvas:cv, lines:out};
+  }
+};
+/* so chữ đọc được với đáp án: căn hàng kiểu bán toàn cục (chữ thừa ở đầu và cuối ảnh không bị trừ), một chữ khớp nếu đáp án nằm trong các ứng viên app đọc ra */
+function paperAlign(exp, got){
+  const n = exp.length, m = got.length, INF = 1e9, D = [], B = [];
+  for (let j = 0; j <= n; j++){ D.push(new Float64Array(m + 1).fill(INF)); B.push(new Int8Array(m + 1)); }
+  for (let i = 0; i <= m; i++) D[0][i] = 0;
+  const cost = (j, i) => got[i].c === exp[j] ? 0 : (got[i].cands.indexOf(exp[j]) >= 0 ? 0.3 : 1);
+  for (let j = 1; j <= n; j++) for (let i = 0; i <= m; i++){
+    let v = D[j - 1][i] + 1, b = 1; // thiếu chữ j
+    if (i > 0){ const s = D[j - 1][i - 1] + cost(j - 1, i - 1); if (s < v) { v = s; b = 2; } const e = D[j][i - 1] + 1; if (e < v) { v = e; b = 3; } }
+    D[j][i] = v; B[j][i] = b;
+  }
+  let i = 0; for (let k = 1; k <= m; k++) if (D[n][k] < D[n][i]) i = k;
+  const st = new Array(n).fill('miss'), at = new Array(n).fill(-1); let j = n;
+  while (j > 0){ const b = B[j][i]; if (b === 2) { const g = got[i - 1]; st[j - 1] = g.c === exp[j - 1] ? 'ok' : (g.cands.indexOf(exp[j - 1]) >= 0 ? 'near' : 'wrong'); at[j - 1] = i - 1; i--; j--; } else if (b === 3) i--; else j--; }
+  return {st, at};
+}
+/* bảng chấm bài viết trên giấy, dùng chung cho các bài viết câu */
+function paperPanel(o){
+  const box = h('div', {class:'paper'}), status = h('p', {class:'muted', role:'status'}), res = h('div', {class:'paperres'});
+  const cam = h('input', {type:'file', accept:'image/*', capture:'environment', hidden:true}), lib = h('input', {type:'file', accept:'image/*', hidden:true});
+  const intro = h('div', {class:'paperintro'},
+    h('p', null, 'Viết ' + (o.exp.length > 2 ? 'cả câu' : 'cả từ') + ' ra giấy bằng bút đậm, chữ to và rõ, viết ngang trên một hoặc vài dòng. Chụp thẳng từ trên xuống, đủ sáng, khung ảnh chỉ lấy phần vừa viết.'),
+    h('div', {class:'row', style:'justify-content:center'}, h('button', {type:'button', class:'btn primary big', onclick:() => cam.click()}, 'Chụp bài viết'), h('button', {type:'button', class:'btn', onclick:() => lib.click()}, 'Chọn ảnh có sẵn')),
+    h('div', {class:'center'}, h('button', {type:'button', class:'btn ghost small', onclick:o.onBack}, 'Quay lại viết trên màn hình')));
+  let busy = false;
+  const run = async f => {
+    if (busy) return; busy = true; res.textContent = '';
+    try {
+      status.textContent = 'Đang chuẩn bị bộ đọc chữ…';
+      await Ocr.load(p => { status.textContent = 'Đang tải bộ đọc chữ, chỉ lần đầu (khoảng 25 MB): ' + p + '%'; });
+      status.textContent = 'Đang đọc chữ trong ảnh…'; const t1 = Date.now();
+      const r = await Ocr.read(f), got = []; r.lines.forEach(l => l.chars.forEach(c => { if (isHan(c.c) || c.cands.some(isHan)) got.push(c); }));
+      status.textContent = '';
+      show(r, got, Date.now() - t1);
+    } catch (e) { status.textContent = 'Chưa đọc được ảnh (' + ((e && e.message) || e) + '). Thử chụp lại hoặc quay lại viết trên màn hình.'; }
+    busy = false;
+  };
+  cam.onchange = lib.onchange = e => { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) run(f); };
+  function show(r, got, ms){
+    const exp = o.exp, al = paperAlign(exp, got), over = new Array(exp.length).fill(false);
+    const th = document.createElement('canvas'), k = Math.min(1, 640 / r.canvas.width); th.width = Math.round(r.canvas.width * k); th.height = Math.round(r.canvas.height * k);
+    const g = th.getContext('2d'); g.drawImage(r.canvas, 0, 0, th.width, th.height); g.strokeStyle = 'rgba(42,86,168,.9)'; g.lineWidth = 2; r.lines.forEach(l => g.strokeRect(l.box.x * k, l.box.y * k, l.box.w * k, l.box.h * k)); th.className = 'paperimg';
+    const verdict = h('p', {class:'verdict'}), chars = h('div', {class:'paperchars', lang:'zh-Hans'});
+    const rate = j => { const s = al.st[j]; let r2 = over[j] || s === 'ok' ? 3 : (s === 'near' ? 2 : 1); return o.hint() >= 2 ? Math.min(r2, 2) : r2; };
+    const paint = () => {
+      chars.textContent = '';
+      exp.forEach((c, j) => { const s = over[j] ? 'ok' : al.st[j]; chars.appendChild(h('button', {type:'button', class:'pc ' + (s === 'ok' ? 'ok' : s === 'near' ? 'near' : 'bad'), title:s === 'ok' ? 'Đúng' : 'Bấm nếu app chấm oan', onclick:() => { if (al.st[j] === 'ok') return; over[j] = !over[j]; paint(); }}, c)); });
+      const rs = exp.map((c, j) => rate(j)), good = rs.filter(x => x >= 2).length, perfect = good === exp.length;
+      verdict.className = 'verdict ' + (perfect ? 'ok' : good ? 'warn' : 'bad');
+      verdict.textContent = perfect ? (o.hint() >= 2 ? 'Đúng cả câu, có dùng gợi ý' : 'Đúng ' + (exp.length > 2 ? 'cả câu' : 'cả từ')) : 'Đúng ' + good + ' / ' + exp.length + ' chữ';
+      return {rs, perfect};
+    };
+    const read = got.map(c => c.c).join('') || '(không thấy chữ Hán nào)';
+    const done = h('button', {type:'button', class:'btn primary big', onclick:() => { const st = paint(); intro.hidden = true; again.hidden = true; done.hidden = true; chars.querySelectorAll('button').forEach(b => b.disabled = true); o.onDone(st.rs, st.perfect, read); }}, 'Chốt điểm');
+    const again = h('button', {type:'button', class:'btn', onclick:() => cam.click()}, 'Chụp lại');
+    const st0 = paint(); FX.answer(st0.perfect);
+    res.append(verdict, h('p', {class:'fine'}, 'Xanh: đúng. Vàng: gần đúng. Đỏ: app không thấy chữ này. Viết đúng mà bị chấm oan thì bấm vào chữ đỏ.'), chars,
+      h('p', {class:'readline'}, 'App đọc được: ', h('span', {class:'hanline', lang:'zh-Hans'}, read)), th,
+      h('small', {class:'fine'}, 'Đọc trong ' + (ms / 1000).toFixed(1) + ' giây.'), h('div', {class:'row', style:'justify-content:center'}, again, done));
+    intro.hidden = true;
+  }
+  box.append(intro, cam, lib, status, res);
+  return box;
+}
+
+/* ---------- phong cách Tiệm điểm tâm (23/11): bánh bao, há cảo, xíu mại, bánh trứng, lồng hấp, đèn lồng ---------- */
+const FOOD = {
+  bao:(face, brush) => '<svg viewBox="0 0 130 104"><ellipse cx="62" cy="96" rx="48" ry="5" fill="rgba(90,60,30,.15)"/>'
+    + '<path d="M12 80 C8 44 36 16 62 16 C88 16 116 44 112 80 C110 94 14 94 12 80Z" fill="#fffaf2" stroke="#d6c0a0" stroke-width="3"/>'
+    + '<path d="M62 18 q-8 9 -18 12 M62 18 q8 9 18 12 M62 18 q-3 11 -8 17 M62 18 q3 11 8 17" fill="none" stroke="#e0cdb0" stroke-width="2.6" stroke-linecap="round"/><circle cx="62" cy="21" r="3.6" fill="#e85a4a"/>'
+    + '<path d="M30 40 q10 -10 22 -12" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".9"/>'
+    + (face ? '<path d="M42 60 q5 -6 10 0 M72 60 q5 -6 10 0" fill="none" stroke="#4a3020" stroke-width="3" stroke-linecap="round"/><ellipse cx="38" cy="69" rx="6" ry="3.4" fill="#f6a4a0" opacity=".85"/><ellipse cx="86" cy="69" rx="6" ry="3.4" fill="#f6a4a0" opacity=".85"/><path d="M56 68 q6 6 12 0" fill="#e86a5a" stroke="#4a3020" stroke-width="2.4" stroke-linecap="round"/>' : '')
+    + (brush ? '<path d="M100 74 L122 30" stroke="#b07a42" stroke-width="6" stroke-linecap="round"/><path d="M122 30 L127 18" stroke="#2f2620" stroke-width="7" stroke-linecap="round"/><ellipse cx="102" cy="74" rx="8" ry="6" fill="#fffaf2" stroke="#d6c0a0" stroke-width="2.4"/>' : '') + '</svg>',
+  hagow:'<svg viewBox="0 0 120 90"><ellipse cx="60" cy="82" rx="44" ry="5" fill="rgba(90,60,30,.13)"/><path d="M8 70 C16 26 104 26 112 70 C84 82 36 82 8 70Z" fill="#f8f1e6" stroke="#d9c6a8" stroke-width="3"/>'
+    + '<path d="M36 60 C46 44 74 44 84 58" fill="none" stroke="#f3a08a" stroke-width="10" stroke-linecap="round" opacity=".55"/>'
+    + '<path d="M24 46 l4 -8 M38 38 l3 -9 M52 34 l2 -9 M66 34 l-1 -9 M80 37 l-3 -9 M94 44 l-4 -8" stroke="#e3d3ba" stroke-width="2.6" stroke-linecap="round"/>'
+    + '<circle cx="48" cy="64" r="2.6" fill="#4a3020"/><circle cx="72" cy="64" r="2.6" fill="#4a3020"/><ellipse cx="40" cy="70" rx="4.5" ry="2.6" fill="#f6a4a0" opacity=".8"/><ellipse cx="80" cy="70" rx="4.5" ry="2.6" fill="#f6a4a0" opacity=".8"/></svg>',
+  siumai:'<svg viewBox="0 0 120 110"><ellipse cx="60" cy="102" rx="40" ry="5" fill="rgba(90,60,30,.13)"/><path d="M20 36 L100 36 L92 92 C82 100 38 100 28 92Z" fill="#f6d06a" stroke="#c9973a" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M28 44 v44 M44 42 v50 M60 42 v52 M76 42 v50 M92 44 v44" stroke="rgba(201,151,58,.45)" stroke-width="2"/><ellipse cx="60" cy="36" rx="42" ry="13" fill="#f4b8a2" stroke="#d68f78" stroke-width="3"/><circle cx="60" cy="31" r="7" fill="#f2873a" stroke="#c9652a" stroke-width="2"/>'
+    + '<circle cx="48" cy="66" r="3" fill="#4a3020"/><circle cx="72" cy="66" r="3" fill="#4a3020"/><path d="M54 74 q6 5 12 0" fill="none" stroke="#4a3020" stroke-width="2.4" stroke-linecap="round"/><ellipse cx="40" cy="74" rx="5" ry="3" fill="#f6a4a0" opacity=".8"/><ellipse cx="80" cy="74" rx="5" ry="3" fill="#f6a4a0" opacity=".8"/></svg>',
+  tart:'<svg viewBox="0 0 120 80"><ellipse cx="60" cy="74" rx="46" ry="5" fill="rgba(90,60,30,.13)"/><path d="M8 40 q6 -8 12 0 q6 -8 12 0 q6 -8 12 0 q6 -8 12 0 q6 -8 12 0 q6 -8 12 0 q6 -8 12 0 q6 -8 12 0 q6 -8 12 0 L104 62 C96 74 24 74 16 62Z" fill="#e7a95c" stroke="#b97a34" stroke-width="3" stroke-linejoin="round"/>'
+    + '<ellipse cx="60" cy="42" rx="44" ry="12" fill="#ffd453" stroke="#e5ae2e" stroke-width="2.4"/><ellipse cx="44" cy="39" rx="14" ry="4" fill="#fff3b8" opacity=".9"/></svg>',
+  lantern:'<svg viewBox="0 0 80 140"><path d="M40 0 v14" stroke="#9a6a3a" stroke-width="3"/><rect x="26" y="12" width="28" height="9" rx="3" fill="#e9b949" stroke="#b5862b" stroke-width="2"/>'
+    + '<ellipse cx="40" cy="60" rx="34" ry="40" fill="#e04a3c" stroke="#a52f24" stroke-width="3"/><path d="M40 20 C22 40 22 80 40 100 M40 20 C58 40 58 80 40 100 M40 20 v80" fill="none" stroke="#b9372a" stroke-width="2"/>'
+    + '<ellipse cx="26" cy="46" rx="6" ry="12" fill="#fff" opacity=".3"/><rect x="26" y="98" width="28" height="9" rx="3" fill="#e9b949" stroke="#b5862b" stroke-width="2"/><path d="M34 107 l-2 28 M40 107 v30 M46 107 l2 28" stroke="#e04a3c" stroke-width="3" stroke-linecap="round"/></svg>',
+  steamer:'<svg viewBox="0 0 140 110"><ellipse cx="70" cy="102" rx="60" ry="6" fill="rgba(90,60,30,.15)"/><path d="M8 40 h124 v46 C132 98 8 98 8 86Z" fill="#e3bd83" stroke="#a87a45" stroke-width="3"/>'
+    + '<path d="M8 52 h124 M8 64 h124 M8 76 h124" stroke="rgba(168,122,69,.55)" stroke-width="2"/><path d="M30 40 v50 M60 40 v54 M90 40 v54 M118 40 v48" stroke="rgba(168,122,69,.35)" stroke-width="2"/>'
+    + '<ellipse cx="70" cy="40" rx="62" ry="14" fill="#ecca95" stroke="#a87a45" stroke-width="3"/><path d="M26 36 C30 20 50 14 62 26 C70 10 98 12 104 32" fill="#fffaf2" stroke="#d6c0a0" stroke-width="2.6"/>'
+    + '<circle cx="56" cy="30" r="2.4" fill="#4a3020"/><circle cx="80" cy="28" r="2.4" fill="#4a3020"/><path d="M40 6 q-6 8 0 14 M70 2 q-6 8 0 14 M100 6 q-6 8 0 14" fill="none" stroke="rgba(160,140,120,.5)" stroke-width="3" stroke-linecap="round"/></svg>',
+  leaf:'<svg viewBox="0 0 120 60"><path d="M4 50 C30 8 90 0 116 10 C96 40 46 60 4 50Z" fill="#8cc46a" stroke="#5e9a3f" stroke-width="3"/><path d="M10 48 C44 34 80 20 110 12" fill="none" stroke="#5e9a3f" stroke-width="2.4"/></svg>',
+  sticks:'<svg viewBox="0 0 140 40"><path d="M4 30 L136 6" stroke="#c48a4c" stroke-width="6" stroke-linecap="round"/><path d="M8 38 L138 18" stroke="#b07a42" stroke-width="6" stroke-linecap="round"/><path d="M100 13 L136 6 M104 26 L138 18" stroke="#e04a3c" stroke-width="7" stroke-linecap="round"/></svg>'
+};
+MASCOT.bao = FOOD.bao(true, true);
 
 
 /* ================= phiên học ================= */
@@ -2597,7 +2817,7 @@ async function boot(){
     show('err', [h('h1', null, 'Chưa mở được sổ'), h('p', {class:'muted'}, 'Không đọc được dữ liệu (' + ((e && (e.code || e.message)) || 'lỗi') + '). Tiến độ của anh không bị ghi đè. Kiểm tra mạng rồi thử lại.'), h('div', {class:'row'}, h('button', {type:'button', class:'btn primary big', onclick:() => { view().textContent = ''; view().appendChild(h('p', {class:'muted', id:'bootmsg'}, 'Đang mở sổ…')); boot(); }}, 'Thử lại'))]);
   }
 }
-window.__app = {viewBlitz, blitzPool, Session, exOrder, exMCQ, exType, exTones, exFlip, exIntro, exWrite, show, h, sentProgress, startSent, SENTS:() => SENTS, exSent, sentAlign, exTones, Cloud, Ink, exFree, practiceGen, readySents, SET, viewPractice, viewSettings, Store, V, Session, Strokes, Snd, segment, grade, stats, P, META, viewHome, viewPlacement, viewPlaceGroups, applyPlacement, items, newQueue, dueList, unplaced};
+window.__app = {Ocr, paperAlign, viewBlitz, blitzPool, Session, exOrder, exMCQ, exType, exTones, exFlip, exIntro, exWrite, show, h, sentProgress, startSent, SENTS:() => SENTS, exSent, sentAlign, exTones, Cloud, Ink, exFree, practiceGen, readySents, SET, viewPractice, viewSettings, Store, V, Session, Strokes, Snd, segment, grade, stats, P, META, viewHome, viewPlacement, viewPlaceGroups, applyPlacement, items, newQueue, dueList, unplaced};
 boot();
 })();
 </script>
