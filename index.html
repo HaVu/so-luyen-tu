@@ -362,6 +362,8 @@ h2{color:var(--ink);font-size:17px;font-weight:700}
 .wrap{padding-bottom:72px}
 .top nav button{white-space:nowrap}
 @media (max-width:440px){.top{gap:8px;padding:8px 10px}.top nav{gap:4px}.top nav button{padding:6px 9px;font-size:14.5px;min-height:38px}.sync{font-size:12px;max-width:62px;overflow:hidden;text-overflow:ellipsis}.hero h1{font-size:26px}}
+:root[data-font="may"]{--han:"PingFang SC","Hiragino Sans GB","Noto Sans SC","Noto Sans CJK SC","Source Han Sans SC","Microsoft YaHei",sans-serif}
+.hz.txt{font-weight:400}
 
 </style>
 </head>
@@ -580,9 +582,11 @@ const Strokes = {
   }
 };
 function svgFor(d){ return '<svg viewBox="0 0 1024 1024" aria-hidden="true"><g transform="scale(1,-1) translate(0,-900)">' + d.strokes.map(s => '<path d="' + s + '"></path>').join('') + '</g></svg>'; }
-function hanEl(ch, px){
+function hanEl(ch, px, kai){
   const e = h('span', {class:'hz', lang:'zh-Hans', role:'img', 'aria-label':ch});
   if (px) { e.style.width = px + 'px'; e.style.height = px + 'px'; }
+  let print = false; if (!kai) { try { print = SET().font === 'may'; } catch (x) {} }
+  if (print) { e.classList.add('txt'); e.textContent = ch; if (px) e.style.fontSize = Math.round(px * 0.86) + 'px'; return e; } /* chữ máy tính: dùng phông hệ thống (PingFang, Noto Sans) */
   const d = Strokes.cache[ch];
   if (d) e.innerHTML = svgFor(d);
   else { e.classList.add('txt'); e.textContent = ch; if (px) e.style.fontSize = Math.round(px * 0.86) + 'px'; Strokes.get(ch).then(x => { if (x && e.isConnected !== false) { e.classList.remove('txt'); e.style.fontSize = ''; e.innerHTML = svgFor(x); } }).catch(() => {}); }
@@ -675,7 +679,7 @@ function knownCard(S, spreadDays){
   const due = Date.now() + (Math.random() * spreadDays - 1) * DAY; // khoảng một phần mười đến hạn ngay để kiểm lại
   return [Math.round(due / 60000), S, 3, 1, 0, 2, Math.round(Math.min(Date.now(), due - S * DAY) / 60000), 2, 0, S];
 }
-function SET(){ const s = META().set; return {wr:s.wr || 25, nd:s.nd || 15, names:s.names !== false, auto:s.auto === true, snd:s.snd !== false, mins:s.mins || 15, quiet:!!s.quiet, wm:s.wm || 'mix', strict:!!s.strict, t3:!!s.t3, wz:s.wz || 'auto'}; }
+function SET(){ const s = META().set; return {wr:s.wr || 25, nd:s.nd || 15, names:s.names !== false, auto:s.auto === true, snd:s.snd !== false, mins:s.mins || 15, quiet:!!s.quiet, wm:s.wm || 'mix', ord:s.ord || 'net', font:s.font || 'kai', strict:!!s.strict, t3:!!s.t3, wz:s.wz || 'auto'}; }
 function enabled(it){ return SET().names || it.g !== 'Tên riêng'; }
 function items(){ return V.items.filter(enabled); }
 function retention(sk){
@@ -973,14 +977,14 @@ function exWrite(ex, api){
     status.textContent = 'Đang tải nét…';
     const d = await Strokes.get(ch).catch(() => null);
     if (!d) { status.textContent = 'Chưa có dữ liệu nét cho chữ này, bỏ qua.'; return advance(); }
-    const total = d.strokes.length, miss = lvl === 1 ? 1 : 3;
-    writer = window.HanziWriter.create(wbox, ch, {width:px, height:px, padding:Math.round(px * 0.07), showCharacter:false, showOutline:lvl === 1,
+    const total = d.strokes.length, miss = lvl === 1 ? 2 : 3; let tm = 0; btnShow.hidden = true;
+    writer = window.HanziWriter.create(wbox, ch, {width:px, height:px, padding:Math.round(px * 0.07), showCharacter:false, showOutline:false,
       strokeColor:cssVar('--ink'), outlineColor:cssVar('--outline'), drawingColor:cssVar('--jade'), highlightColor:cssVar('--seal'),
       drawingWidth:Math.max(6, Math.round(px / 40)), showHintAfterMisses:miss, highlightOnComplete:true, leniency:SET().strict ? 1 : 1.7, acceptBackwardsStrokes:!SET().strict, charDataLoader:(c, on) => on(d)});
-    status.textContent = (lvl === 1 ? 'Tô theo chữ mờ' : 'Viết từ trí nhớ') + ': chữ thứ ' + (ti + 1) + '/' + targets.length + ', ' + total + ' nét';
+    status.textContent = 'Viết từ trí nhớ: chữ thứ ' + (ti + 1) + '/' + targets.length + ', ' + total + ' nét';
     const t0 = Date.now();
     writer.quiz({
-      onMistake:s => { if (s.mistakesOnStroke === miss) hinted++; status.textContent = 'Chưa đúng nét ' + (s.strokeNum + 1) + '/' + total; },
+      onMistake:s => { if (s.mistakesOnStroke === miss) hinted++; if (++tm >= 3) btnShow.hidden = false; status.textContent = 'Chưa đúng nét ' + (s.strokeNum + 1) + '/' + total; },
       onCorrectStroke:s => { status.textContent = 'Nét ' + (s.strokeNum + 1) + '/' + total; },
       onComplete:sum => {
         const m = sum.totalMistakes; let rating = 3;
@@ -1052,7 +1056,7 @@ function demoBtn(word){
 /* Người học viết hết rồi mới chấm. Nét của người học được co giãn cho khớp khung của chữ mẫu, rồi so lần lượt với từng nét mẫu:
    thiếu nét, thừa nét, sai thứ tự, ngược chiều. */
 const Ink = {
-  cfg:{T:245, GAP:185, blend:0.4, merge:true, mergeT:160, join:160},
+  cfg:{T:245, GAP:185, blend:0.4, merge:true, mergeT:160, join:160, freeT:40},
   resample(p, n){
     if (p.length < 2) return Array.from({length:n}, () => p[0]);
     const d = [0]; for (let i = 1; i < p.length; i++) d.push(d[i - 1] + Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]));
@@ -1060,6 +1064,19 @@ const Ink = {
     const out = []; let j = 1;
     for (let k = 0; k < n; k++){ const t = L * k / (n - 1); while (j < p.length - 1 && d[j] < t) j++; const a = p[j - 1], b = p[j], f = (t - d[j - 1]) / ((d[j] - d[j - 1]) || 1); out.push([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]); }
     return out;
+  },
+  /* phép gán tối ưu (thuật toán Hung-ga-ri) trên ma trận vuông, trả về cột được gán cho từng hàng */
+  assign(a){
+    const n = a.length, INF = 1e18, u = new Array(n + 1).fill(0), v = new Array(n + 1).fill(0), p = new Array(n + 1).fill(0), way = new Array(n + 1).fill(0);
+    for (let i = 1; i <= n; i++){
+      p[0] = i; let j0 = 0; const minv = new Array(n + 1).fill(INF), used = new Array(n + 1).fill(false);
+      do { used[j0] = true; const i0 = p[j0]; let delta = INF, j1 = 0;
+        for (let j = 1; j <= n; j++) if (!used[j]) { const cur = a[i0 - 1][j - 1] - u[i0] - v[j]; if (cur < minv[j]) { minv[j] = cur; way[j] = j0; } if (minv[j] < delta) { delta = minv[j]; j1 = j; } }
+        for (let j = 0; j <= n; j++) if (used[j]) { u[p[j]] += delta; v[j] -= delta; } else minv[j] -= delta;
+        j0 = j1; } while (p[j0] !== 0);
+      do { const j1 = way[j0]; p[j0] = p[j1]; j0 = j1; } while (j0);
+    }
+    const ans = new Array(n); for (let j = 1; j <= n; j++) ans[p[j] - 1] = j - 1; return ans;
   },
   len(p){ let L = 0; for (let i = 1; i < p.length; i++) L += Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]); return L; },
   box(ss){ let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; ss.forEach(s => s.forEach(q => { if (q[0] < x0) x0 = q[0]; if (q[1] < y0) y0 = q[1]; if (q[0] > x1) x1 = q[0]; if (q[1] > y1) y1 = q[1]; })); return {x0, y0, x1, y1, w:x1 - x0, h:y1 - y0, cx:(x0 + x1) / 2, cy:(y0 + y1) / 2}; },
@@ -1074,24 +1091,31 @@ const Ink = {
   },
   /* strict = true: chấm theo chữ khải. Mặc định chấm thoáng: nhận nét thẳng thay nét cong, nét không móc, nét ngắn viết ngược chiều,
      hai nét viết liền hoặc một nét viết tách đôi như trong chữ in, và cho lệch một hai nét ở chữ nhiều nét. */
-  grade(user, data, size, strict){
+  grade(user, data, size, strict, free){
     const N = data.medians.length, K = user.length, all = Array.from({length:N}, (_, i) => i);
     if (!K) return {ok:false, empty:true, missing:all, extra:[], order:[], rev:[], n:N, k:0, rating:1, cost:1e9, note:'Chưa viết'};
-    const cf = Ink.cfg, T = strict ? 235 : cf.T, GAP = strict ? 175 : cf.GAP, JOIN = cf.join, MT = cf.mergeT, useMerge = !strict && cf.merge && K !== N;
+    const cf = Ink.cfg, T = (strict ? 235 : cf.T) - (free ? cf.freeT : 0), GAP = strict ? 175 : cf.GAP, JOIN = cf.join, MT = cf.mergeT, useMerge = !strict && cf.merge && K !== N;
     const pre = data._pre || (data._pre = {mb:Ink.box(data.medians), M:data.medians.map(m => Ink.resample(m, 16)), ML:data.medians.map(Ink.len), MAl:data.medians.map(m => { const a = Ink.noHook(m); return a ? Ink.resample(a, 16) : null; })});
     const mb = pre.mb, uf = user.map(s => s.map(q => [q[0], -q[1]])), ub = Ink.box(uf);
     const uni = 1024 * 0.9 / size, okx = ub.w >= size * 0.12 && mb.w >= 160, oky = ub.h >= size * 0.12 && mb.h >= 160;
     let sx = mb.w / Math.max(ub.w, 1), sy = mb.h / Math.max(ub.h, 1);
     if (okx && !oky) sy = sx; else if (!okx && oky) sx = sy; else if (!okx && !oky) sx = sy = uni;
     const med = data.medians, M = pre.M, ML = pre.ML, MA = strict ? med.map(() => null) : pre.MAl;
-    const UN = uf.map(s => s.map(q => [(q[0] - ub.cx) * sx + mb.cx, (q[1] - ub.cy) * sy + mb.cy])), U = UN.map(s => Ink.resample(s, 16));
+    let UN = uf.map(s => s.map(q => [(q[0] - ub.cx) * sx + mb.cx, (q[1] - ub.cy) * sy + mb.cy])), U = UN.map(s => Ink.resample(s, 16));
     const one = (u, j) => {
       let c = Ink.cost(u, M[j]); if (MA[j]) { const c2 = Ink.cost(u, MA[j]); c = [Math.min(c[0], c2[0]), Math.min(c[1], c2[1])]; }
       if (!strict && cf.blend){ const w = cf.blend, ef = (Ink.dist(u[0], M[j][0]) + Ink.dist(u[15], M[j][15])) / 2, er = (Ink.dist(u[15], M[j][0]) + Ink.dist(u[0], M[j][15])) / 2; c = [Math.min(c[0], (1 - w) * c[0] + w * ef), Math.min(c[1], (1 - w) * c[1] + w * er)]; }
       return c;
     };
-    const C = [], RV = [];
+    let C = [], RV = [];
     for (let i = 0; i < K; i++){ C.push([]); RV.push([]); for (let j = 0; j < N; j++){ const c = one(U[i], j); C[i].push(Math.min(c[0], c[1])); RV[i].push(strict ? (ML[j] >= 150 && c[1] + 45 < c[0]) : (ML[j] >= 320 && c[1] + 110 < c[0])); } }
+    /* không bắt thứ tự nét: ghép mỗi nét đã viết với nét mẫu giống nhất (phép gán tối ưu), rồi xếp lại nét theo thứ tự chuẩn trước khi chấm */
+    if (free && K > 1){
+      const n = Math.max(K, N), A = []; for (let i = 0; i < n; i++){ const row = []; for (let j = 0; j < n; j++) row.push(i < K && j < N ? Math.min(C[i][j], 2 * T) : (i < K ? T : 0)); A.push(row); }
+      const as = Ink.assign(A), key = i => { if (as[i] < N && C[i][as[i]] <= 2 * T) return as[i]; let b = 0; for (let q = 1; q < N; q++) if (C[i][q] < C[i][b]) b = q; return b + 0.5; };
+      const perm = Array.from({length:K}, (_, i) => i).sort((a, b) => key(a) - key(b) || a - b);
+      UN = perm.map(i => UN[i]); U = perm.map(i => U[i]); C = perm.map(i => C[i]); RV = perm.map(i => RV[i]);
+    }
     /* một nét của người học phủ hai nét mẫu liền nhau, hoặc hai nét của người học phủ một nét mẫu */
     const CM = [], CS = [];
     if (useMerge){
@@ -1129,7 +1153,7 @@ const Ink = {
       const a = pairs[q], b = pairs[q + 1];
       if (b[1] === a[1] + 1 && b[0] === a[0] + 1 && order.indexOf(a[1]) < 0 && order.indexOf(b[1]) < 0 && C[a[0]][b[1]] + C[b[0]][a[1]] + 50 < C[a[0]][a[1]] + C[b[0]][b[1]]) { order.push(a[1], b[1]); q++; }
     }
-    const rev = pairs.filter(q => RV[q[0]][q[1]]).map(q => q[1]).sort((a, b) => a - b);
+    const rev = free ? [] : pairs.filter(q => RV[q[0]][q[1]]).map(q => q[1]).sort((a, b) => a - b); if (free) order.length = 0;
     missing.sort((a, b) => a - b); order.sort((a, b) => a - b);
     const hard = missing.length + extra.length, soft = order.length + rev.length;
     let rating = 3;
@@ -1182,24 +1206,43 @@ function exFree(ex, api){
     h('button', {type:'button', class:'btn', onclick:() => { if (!owner.locked) cells.forEach(c => c.clear()); }}, 'Xoá hết'),
     sent ? h('button', {type:'button', class:'btn', onclick:e => { pyEl.hidden = !pyEl.hidden; e.currentTarget.textContent = pyEl.hidden ? 'Hiện pinyin' : 'Ẩn pinyin'; }}, 'Hiện pinyin') : null,
     h('button', {type:'button', class:'btn primary big', onclick:check}, 'Chấm'));
-  const t0 = Date.now();
-  async function check(){
-    if (owner.locked) return; if (!cells.some(c => c.strokes.length)) return;
-    owner.locked = true; tools.hidden = true;
-    const res = [];
-    for (const c of cells){ const d = await Strokes.get(c.ch).catch(() => null); const g = d ? Ink.grade(c.strokes, d, size, SET().strict) : {ok:true, rating:3, note:'Chưa có chữ mẫu để chấm', missing:[], order:[], rev:[]}; res.push(g); if (d) resultCell(c, d, g); }
+  const t0 = Date.now(), retryBox = h('div'); let tries = 0;
+  /* Không hiện chữ mẫu trước. Lần chấm đầu có chữ sai thì chưa lộ đáp án: giữ chữ đúng, xoá ô sai để viết lại, kèm lời nhắc chỗ sai.
+     Lần hai (hoặc bấm Xem đáp án) mới hiện chữ mẫu. Chữ phải viết lại mà đúng thì chỉ tính "khó" (điểm 2). */
+  async function check(reveal){
+    if (owner.locked) return; if (reveal !== true && !cells.some(c => c.strokes.length && !c.done)) return;
+    owner.locked = true; tools.hidden = true; retryBox.textContent = ''; tries++;
+    const res = [], data = [];
+    for (const c of cells){
+      const d = c.done ? c.done.d : await Strokes.get(c.ch).catch(() => null);
+      let g = c.done ? c.done.g : (d ? Ink.grade(c.strokes, d, size, SET().strict, SET().ord === 'hinh') : {ok:true, rating:3, note:'Chưa có chữ mẫu để chấm', missing:[], order:[], rev:[]});
+      if (c.retry && !c.done && g.rating >= 2) g = Object.assign({}, g, {rating:2, note:'Viết lại đúng sau lần đầu sai'});
+      res.push(g); data.push(d);
+    }
+    if (tries === 1 && reveal !== true && res.some(g => g.rating === 1)){
+      cells.forEach((c, i) => { const g = res[i];
+        if (g.rating >= 2) { c.done = {g, d:data[i]}; if (data[i]) resultCell(c, data[i], g); c.note.textContent = g.note; c.note.className = 'fwnote ' + (g.rating === 3 ? 'ok' : 'warn'); }
+        else { c.retry = true; c.clear(); c.note.textContent = g.empty ? 'Chưa viết' : g.note.replace(/^Chưa đúng\. ?/, 'Lần 1: ').replace(/^Chưa đúng$/, 'Lần 1 chưa đúng'); c.note.className = 'fwnote bad'; }
+      });
+      const nb = res.filter(g => g.rating === 1).length;
+      retryBox.appendChild(h('p', {class:'verdict bad'}, nb + ' chữ chưa đúng. Viết lại ô trống rồi bấm Chấm lần nữa.'));
+      retryBox.appendChild(h('div', {class:'center'}, h('button', {type:'button', class:'btn ghost', onclick:() => check(true)}, 'Xem đáp án')));
+      ex.fxDone = true; FX.answer(false);
+      owner.locked = false; tools.hidden = false; KEYS = {Enter:check}; return;
+    }
+    cells.forEach((c, i) => { if (!c.done && data[i]) resultCell(c, data[i], res[i]); });
     const verdict = h('p', {class:'verdict'});
     const paint = () => {
       const good = res.filter(g => g.rating >= 2).length, clean = res.every(g => g.rating === 3 && g.note.indexOf('.') < 0);
       verdict.className = 'verdict ' + (good === res.length ? 'ok' : (good ? 'warn' : 'bad'));
-      verdict.textContent = (good === res.length ? 'Đúng cả ' + res.length + ' chữ' : 'Đúng ' + good + ' / ' + res.length + ' chữ') + (clean ? '' : '. Nét đỏ là nét thiếu, nét cam là nét khác thứ tự hoặc chiều chuẩn.');
+      verdict.textContent = (good === res.length ? 'Đúng cả ' + res.length + ' chữ' : 'Đúng ' + good + ' / ' + res.length + ' chữ') + (clean ? '' : (SET().ord === 'hinh' ? '. Nét đỏ là nét thiếu.' : '. Nét đỏ là nét thiếu, nét cam là nét khác thứ tự hoặc chiều chuẩn.'));
     };
     cells.forEach((c, i) => {
       const g = res[i]; c.note.textContent = g.note; c.note.className = 'fwnote ' + (g.rating === 3 ? 'ok' : (g.rating === 2 ? 'warn' : 'bad'));
       if (g.rating !== 3) c.el.parentNode.appendChild(h('button', {type:'button', class:'btn ghost small', 'aria-pressed':'false', onclick:e => { const on = e.currentTarget.getAttribute('aria-pressed') !== 'true'; e.currentTarget.setAttribute('aria-pressed', String(on)); g.rating = on ? 3 : g.raw; c.note.textContent = on ? 'Tính là đúng' : g.note; c.note.className = 'fwnote ' + (on ? 'ok' : (g.raw === 2 ? 'warn' : 'bad')); paint(); }}, 'Chấm oan, tính đúng'));
       g.raw = g.rating;
     });
-    paint(); after.appendChild(verdict); ex.fxDone = true; FX.answer(res.every(g => g.rating >= 2));
+    paint(); after.appendChild(verdict); const allOk = res.every(g => g.rating >= 2); if (tries === 1) { ex.fxDone = true; FX.answer(allOk); } else if (allOk) FX.answer(true, true);
     const model = wordEl(hz, sent ? 60 : 76);
     after.appendChild(h('div', {class:'info'}, model, printRow(hz), h('div', {class:'py', text:py}), h('div', {class:'mean', text:mean}),
       h('div', {class:'row', style:'justify-content:center'}, demoBtn(model), it ? audioBtns(it) : h('button', {type:'button', class:'btn', onclick:() => speak(hz)}, 'Nghe'), flagBtn(hz)),
@@ -1215,7 +1258,7 @@ function exFree(ex, api){
     if (it) autoPlay(it);
   }
   KEYS = {Enter:check};
-  return [h('div', {class:'prompt'}, h('p', {class:'ask'}, sent ? 'Viết cả câu, xong mới chấm' : 'Viết cả từ, xong mới chấm'), h('div', {class:'mean', text:mean}), pyEl), row, tools, after];
+  return [h('div', {class:'prompt'}, h('p', {class:'ask'}, sent ? 'Viết cả câu, xong mới chấm' : 'Viết cả từ, xong mới chấm'), h('div', {class:'mean', text:mean}), pyEl), row, retryBox, tools, after];
 }
 /* ================= viết tay cả câu: app đọc từng ô, so với câu mẫu, rồi mới chấm =================
    ex: {kind:'sv' (dịch từ tiếng Việt) | 'sd' (nghe chép), sent:{t,p,m,h,alt?}, hz, item?}
@@ -1227,7 +1270,7 @@ Ink.read = function(strokes, size){
   for (const ch in V.charWords){
     const d = Strokes.cache[ch]; if (!d || !d.medians) continue; const N = d.medians.length;
     if (Math.abs(N - K) > Math.max(2, Math.round(N * 0.25))) continue;
-    const g = Ink.grade(strokes, d, size, false), key = (3 - g.rating) * 1000 + g.cost;
+    const g = Ink.grade(strokes, d, size, false, SET().ord === 'hinh'), key = (3 - g.rating) * 1000 + g.cost;
     if (!best || key < best.key) best = {ch, g, key};
   }
   return best && best.g.rating >= 2 ? best : null;
@@ -1238,7 +1281,7 @@ function sentAlign(cells, exp, data, size, strict){
     const key = i + ch; if (key in memo) return memo[key];
     const d = data[j]; let g = null;
     if (!d) g = {rating:3, cost:0, note:'Chưa có chữ mẫu để chấm', missing:[], order:[], rev:[], extra:[]};
-    else if (Math.abs(d.medians.length - c.strokes.length) <= Math.max(3, Math.round(d.medians.length * 0.5))) g = Ink.grade(c.strokes, d, size, strict);
+    else if (Math.abs(d.medians.length - c.strokes.length) <= Math.max(3, Math.round(d.medians.length * 0.5))) g = Ink.grade(c.strokes, d, size, strict, SET().ord === 'hinh');
     return (memo[key] = g);
   }));
   const sc = (i, j) => { const g = G[i][j]; return !g || g.rating === 1 ? -0.6 : (g.rating === 3 ? 2 : 1.4); };
@@ -1530,8 +1573,8 @@ function practiceGen(cfg){
   return function next(){
     if (!kinds.length || fails > kinds.length * 2) return null;
     const k = kinds[ki++ % kinds.length]; let ex = null, it;
-    if (k === 'wn'){ it = nextItem(); if (it) ex = {sk:'w', key:it.chars[0], kind:'w', item:it, chars:Array.from(new Set(it.chars)).slice(0, 4)}; }
-    else if (k === 'wf'){ it = nextItem(); if (it) ex = {sk:'w', key:it.chars[0], kind:'ws', item:it, hz:it.h}; }
+    if (k === 'wn' && SET().ord !== 'hinh'){ it = nextItem(); if (it) ex = {sk:'w', key:it.chars[0], kind:'w', item:it, chars:Array.from(new Set(it.chars)).slice(0, 4)}; }
+    else if (k === 'wf' || k === 'wn'){ it = nextItem(); if (it) ex = {sk:'w', key:it.chars[0], kind:'ws', item:it, hz:it.h}; }
     else if (k === 'ws' || k === 'wd'){ const s = sentOrPhrase(); if (s) ex = s.sent ? {sk:'w', kind:k === 'wd' ? 'sd' : 'sv', sent:s.sent, hz:s.sent.h, item:null} : {sk:'w', kind:k === 'wd' ? 'sd' : 'sv', sent:{t:[s.item.h], p:s.item.p, m:s.item.m, h:s.item.h}, hz:s.item.h, item:s.item}; }
     else if (k === 'ord'){ const s = sentOrPhrase(); if (s) ex = Object.assign({sk:'c', kind:'ord'}, s); }
     else { it = nextItem(x => (k !== 'l' || listenable(x)) && (k !== 'p' || x.syl)); if (it) { const a = P(k)[it.h]; ex = {sk:k, key:it.h, item:it, kind:k + (a && a[7] >= 2 ? '2' : (a ? '1' : '2'))}; } }
@@ -1745,7 +1788,7 @@ function calendarCard(){
     const L = log[dayStr(new Date(y, mo, d).getTime())], done = !!(L && L.n > 0), ch = done ? (L.c || '学') : null; if (done) n++;
     const rot = ((d * 37) % 11) - 5;
     cells.push(h('span', {class:'cd' + (done ? ' done' : '') + (d === today ? ' today' : '') + (d > today ? ' future' : ''), 'aria-label':'Ngày ' + d + (done ? ', đã học, dấu chữ ' + ch : '')},
-      done ? h('span', {class:'sealmini', style:'transform:rotate(' + rot + 'deg)'}, hanEl(ch)) : h('span', {class:'dn num'}, d)));
+      done ? h('span', {class:'sealmini', style:'transform:rotate(' + rot + 'deg)'}, hanEl(ch, 0, true)) : h('span', {class:'dn num'}, d)));
   }
   return h('section', {class:'panel cal'},
     h('div', {class:'row spread'}, h('h2', null, 'Tháng ' + (mo + 1)), h('span', {class:'muted num'}, n ? n + ' ngày có học' : 'Học xong một buổi là có dấu')),
@@ -1807,6 +1850,21 @@ function fxPanel(save){
     h('div', {class:'row'}, h('button', {type:'button', class:'btn small', onclick:() => { FX.unlock(); FX.demo(); }}, 'Nghe thử các âm'), SET().quiet ? h('small', {class:'fine'}, 'Đang bật chế độ yên lặng nên không phát.') : null));
 }
 
+/* ---------- cách viết: thứ tự nét và kiểu chữ (22/11/2026, theo ý các bạn) ----------
+   meta.set.ord: 'net' viết đúng thứ tự nét (mặc định) | 'hinh' chỉ cần đúng mặt chữ, nét nào trước cũng được.
+   meta.set.font: 'kai' chữ khải, vẽ bằng dữ liệu nét (mặc định) | 'may' chữ máy tính, dùng phông hệ thống như trên điện thoại và web. */
+function applyFont(){ try { document.documentElement.setAttribute('data-font', SET().font); } catch (e) {} }
+function writeStylePanel(set, save){
+  const pick = (k, opts, cur, after) => h('div', {class:'row'}, opts.map(o => h('button', {type:'button', class:'btn', 'aria-pressed':String(cur === o[0]), onclick:e => { save(k, o[0]); Array.from(e.currentTarget.parentNode.children).forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); if (after) after(o[0]); }}, o[1])));
+  return h('div', {class:'field'},
+    h('span', {style:'font-weight:600'}, 'Thứ tự nét'),
+    pick('ord', [['net', 'Viết đúng thứ tự nét'], ['hinh', 'Chỉ cần đúng mặt chữ']], set.ord),
+    h('small', {class:'fine'}, 'Chỉ cần đúng mặt chữ: không còn bài viết từng nét, viết nét nào trước cũng được, viết ngược chiều cũng được; app chỉ xem chữ có đủ nét và đúng hình không. Bài vẫn không hiện chữ mờ sẵn; viết sai thì được viết lại một lần kèm lời nhắc rồi mới thấy đáp án.'),
+    h('span', {style:'font-weight:600;margin-top:8px'}, 'Kiểu chữ'),
+    pick('font', [['kai', 'Chữ khải (nét bút lông)'], ['may', 'Chữ máy tính (như trên mạng)']], set.font, v => { applyFont(); if (v === 'may' && META().set.strict) { save('strict', false); const el = document.getElementById('setStrict'); if (el) el.checked = false; } }),
+    h('small', {class:'fine'}, 'Chữ máy tính: chữ trong app hiện giống chữ đọc trên điện thoại và trang web. Bài viết chấm thoáng: nét thẳng thay nét cong, nét không móc, hai nét viết liền hoặc một nét tách đôi như chữ in đều được tính đúng. Bản xem thứ tự nét vẫn là chữ khải.'));
+}
+
 
 /* ================= phiên học ================= */
 const Session = {
@@ -1838,7 +1896,7 @@ const Session = {
         const chars = [c]; new Set(it.chars).forEach(x => { if (x !== c && wset.has(x) && !S.covered.has(x) && chars.length < 4) chars.push(x); });
         const ordered = Array.from(new Set(it.chars)).filter(x => chars.indexOf(x) >= 0); ordered.forEach(x => S.covered.add(x));
         const lvl = (P('w')[c] && P('w')[c][7]) || 1;
-        if (set.wm === 'cau' || (set.wm !== 'net' && lvl >= 2)) { it.chars.forEach(x => S.covered.add(x)); return {sk:'w', key:c, kind:'ws', item:it, hz:it.h, hard:ordered}; }
+        if (set.wm === 'cau' || set.ord === 'hinh' || (set.wm !== 'net' && lvl >= 2)) { it.chars.forEach(x => S.covered.add(x)); return {sk:'w', key:c, kind:'ws', item:it, hz:it.h, hard:ordered}; }
         return {sk:'w', key:c, kind:'w', item:it, chars:ordered};
       }
       return null;
@@ -1874,7 +1932,7 @@ const Session = {
     S.step();
   },
   make(sk, key, lvl){
-    if (sk === 'w') { const words = (V.charWords[key] || []).filter(enabled); if (!words.length) return null; const known = words.filter(x => P('m')[x.h]); return {sk, key, kind:'w', item:pick(known.length ? known : words), chars:[key]}; }
+    if (sk === 'w') { const words = (V.charWords[key] || []).filter(enabled); if (!words.length) return null; const known = words.filter(x => P('m')[x.h]), it = pick(known.length ? known : words); return SET().ord === 'hinh' ? {sk, key, kind:'ws', item:it, hz:it.h, hard:[key]} : {sk, key, kind:'w', item:it, chars:[key]}; }
     const it = V.byH[key]; if (!it) return null;
     lvl = lvl || (P(sk)[key] && P(sk)[key][7]) || 1;
     return {sk, key, item:it, kind:sk + (lvl >= 2 ? '2' : '1')};
@@ -1948,7 +2006,7 @@ const Session = {
     const ch = (todayLog().c) || '学', lv = FX.level();
     const tile = (b, s) => h('div', {class:'tile'}, h('b', null, b), h('span', null, s));
     const box = h('section', {class:'panel finish'},
-      S.n ? h('div', {class:'sealpaper', 'aria-hidden':'true'}, h('span', {class:'splat a'}), h('span', {class:'splat b'}), h('span', {class:'splat c'}), h('div', {class:'sealbig' + (lv === 'off' ? '' : ' drop')}, hanEl(ch, 112))) : null,
+      S.n ? h('div', {class:'sealpaper', 'aria-hidden':'true'}, h('span', {class:'splat a'}), h('span', {class:'splat b'}), h('span', {class:'splat c'}), h('div', {class:'sealbig' + (lv === 'off' ? '' : ' drop')}, hanEl(ch, 112, true))) : null,
       h('h1', null, S.n ? 'Xong buổi' : 'Phiên chưa có thẻ nào'),
       S.n ? h('p', {class:'muted'}, S.n + ' thẻ trong ' + fmtMin(Date.now() - S.t0) + '. Ô lịch hôm nay đã có dấu chữ ' + ch + '.') : null,
       S.n ? h('div', {class:'tiles'},
@@ -1980,10 +2038,11 @@ function viewSettings(){
       h('div', {class:'field'}, h('label', {for:'setWr'}, 'Tỷ lệ viết tay trong phiên: ', wrOut), h('input', {type:'range', id:'setWr', min:10, max:50, step:5, value:set.wr, oninput:e => { wrOut.textContent = e.currentTarget.value + '%'; save('wr', +e.currentTarget.value); }}), h('small', {class:'fine'}, 'Mặc định 25%. Phần ôn nhanh co giãn theo.')),
       h('div', {class:'field'}, h('label', {for:'setNd'}, 'Từ mới mỗi ngày: ', ndOut), h('input', {type:'range', id:'setNd', min:5, max:40, step:5, value:set.nd, oninput:e => { ndOut.textContent = e.currentTarget.value + ' từ'; save('nd', +e.currentTarget.value); }})),
       h('div', {class:'field'}, h('span', {style:'font-weight:600'}, 'Bài viết trong phiên học'),
-        h('div', {class:'row'}, [['mix', 'Bậc 1 tô từng nét, bậc 2 viết cả từ rồi chấm'], ['net', 'Luôn chấm từng nét'], ['cau', 'Luôn viết cả từ rồi chấm']].map(o => h('button', {type:'button', class:'btn', 'aria-pressed':String(set.wm === o[0]), onclick:e => { save('wm', o[0]); Array.from(e.currentTarget.parentNode.children).forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); }}, o[1])))),
+        h('div', {class:'row'}, [['mix', 'Bậc 1 viết từng nét, bậc 2 viết cả từ rồi chấm'], ['net', 'Luôn chấm từng nét'], ['cau', 'Luôn viết cả từ rồi chấm']].map(o => h('button', {type:'button', class:'btn', 'aria-pressed':String(set.wm === o[0]), onclick:e => { save('wm', o[0]); Array.from(e.currentTarget.parentNode.children).forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); }}, o[1])))),
       h('div', {class:'field'}, h('span', {style:'font-weight:600'}, 'Ô viết khi viết tay cả câu'),
         h('div', {class:'row'}, [['auto', 'Tự động theo màn hình'], ['s', 'Ô nhỏ'], ['m', 'Ô vừa'], ['l', 'Ô lớn'], ['pad', 'Bảng lớn, viết từng chữ']].map(o => h('button', {type:'button', class:'btn', 'aria-pressed':String(set.wz === o[0]), onclick:e => { save('wz', o[0]); Array.from(e.currentTarget.parentNode.children).forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); }}, o[1]))),
         h('small', {class:'fine'}, 'Trên điện thoại, Tự động dùng bảng lớn để ngón tay viết thoải mái. Đổi được ngay trong lúc làm bài.')),
+      writeStylePanel(set, save),
       sw('setStrict', 'Chấm nét chặt theo chữ khải (mặc định chấm thoáng, nhận cả nét kiểu chữ in)', 'strict', set.strict),
       sw('setQuiet', 'Chế độ yên lặng: bỏ bài nghe, không tự phát âm', 'quiet', set.quiet),
       sw('setSnd', 'Tự phát âm khi hiện đáp án', 'snd', set.snd), sw('setAuto', 'Tự sang thẻ kế khi trả lời đúng', 'auto', set.auto), sw('setNames', 'Học cả năm tên riêng', 'names', set.names),
@@ -2010,7 +2069,7 @@ async function boot(){
     Cloud.init();
     if (Cloud.on) { await Cloud.ready; if (Cloud.user) { let late = false; const job = Cloud.sync().then(() => { if (late && curView === 'home' && !Session.on) viewHome(); }); await Promise.race([job, new Promise(r => setTimeout(r, 5000))]); late = true; } }
     await loadVocab(); await loadSents();
-    paintSync(); viewHome();
+    paintSync(); applyFont(); viewHome();
     if (Strokes.cache['习']) $('.seal').innerHTML = svgFor(Strokes.cache['习']);
     setTimeout(() => Snd.preloadAll(), 1500);
     setTimeout(() => sendDiag(), 2500);
