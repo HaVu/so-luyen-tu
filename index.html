@@ -365,6 +365,72 @@ h2{color:var(--ink);font-size:17px;font-weight:700}
 :root[data-font="may"]{--han:"PingFang SC","Hiragino Sans GB","Noto Sans SC","Noto Sans CJK SC","Source Han Sans SC","Microsoft YaHei",sans-serif}
 .hz.txt{font-weight:400}
 
+/* ===== 15:40 22/11: sáng dịu hơn, nút là men gốm thật (vân rạn, men đọng ở mép, chân đất nung) ===== */
+:root{
+  --paper:#ddd3be; --card:#ebe3d1; --card2:#e2d8c3; --line:#cbbd9f; --line2:#b9a684; --outline:#d6cbb3;
+  --muted:#5f6371; --ink:#232a38; --jade-soft:#d3dcec; --shadow:rgba(70,48,22,.16);
+  --crackle-s:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cg fill='none' stroke='%23000' stroke-opacity='.10' stroke-width='.7'%3E%3Cpath d='M0 18L22 24 37 14 58 28 90 21M37 14 40 0M58 28 54 52 70 66 64 90M54 52 26 57 0 52M26 57 30 78 12 90M70 66 90 70'/%3E%3C/g%3E%3C/svg%3E");
+  /* men ngà (nút thường) */
+  --g1:#f3ecdc; --g2:#e3d7bd; --g3:#cdbd99; --gfoot:#a98c66; --gtext:#2a2f3b;
+  /* men lam (nút chính) */
+  --b1:#5d84c8; --b2:#2c579f; --b3:#1b3b78; --bfoot:#7d6142;
+  /* men nâu đất (nút phụ) */
+  --t1:#d48a64; --t2:#a8583a; --t3:#7c3c24; --tfoot:#6e4a2e;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --crackle-s:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cg fill='none' stroke='%23fff' stroke-opacity='.07' stroke-width='.7'%3E%3Cpath d='M0 18L22 24 37 14 58 28 90 21M37 14 40 0M58 28 54 52 70 66 64 90M54 52 26 57 0 52M26 57 30 78 12 90M70 66 90 70'/%3E%3C/g%3E%3C/svg%3E");
+    --g1:#2c3446; --g2:#222939; --g3:#1a2030; --gfoot:#0e121b; --gtext:#ece5d6; --bfoot:#0d1730; --tfoot:#2a170e;
+  }
+}
+:root[data-theme="dark"]{
+  --crackle-s:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cg fill='none' stroke='%23fff' stroke-opacity='.07' stroke-width='.7'%3E%3Cpath d='M0 18L22 24 37 14 58 28 90 21M37 14 40 0M58 28 54 52 70 66 64 90M54 52 26 57 0 52M26 57 30 78 12 90M70 66 90 70'/%3E%3C/g%3E%3C/svg%3E");
+  --g1:#2c3446; --g2:#222939; --g3:#1a2030; --gfoot:#0e121b; --gtext:#ece5d6; --bfoot:#0d1730; --tfoot:#2a170e;
+}
+/* nền: men ngà ngả xám, có chỗ men dày mỏng */
+body{background-color:var(--paper);background-image:radial-gradient(ellipse at 20% 0%,rgba(255,250,235,.35),transparent 60%),radial-gradient(ellipse at 90% 100%,rgba(120,95,60,.10),transparent 55%),var(--crackle)}
+.top{background:linear-gradient(180deg,var(--card),var(--card2))}
+/* tấm gốm: men đọng sẫm ở mép, giữa sáng hơn */
+.panel{background-color:var(--card);background-image:radial-gradient(ellipse at 35% 0%,rgba(255,252,240,.40),transparent 65%),var(--crackle-s);
+  box-shadow:inset 0 0 0 5px var(--card),inset 0 0 0 6.5px var(--cob-line),inset 0 0 26px rgba(110,80,40,.12),inset 0 2px 0 rgba(255,255,255,.35),0 3px 0 var(--line2),0 10px 22px var(--shadow)}
+.tile,.cd,.opt,.sealpaper{background-image:radial-gradient(ellipse at 35% 0%,rgba(255,252,240,.35),transparent 70%),var(--crackle-s)}
+/* nút men: đốm sáng phản chiếu, thân men chuyển màu, men đọng ở mép, chân đất nung không tráng men */
+.btn,.top nav button,.tb button,.kb button,.tok,.listen{
+  color:var(--gtext);border:1px solid rgba(80,60,30,.28);
+  background:radial-gradient(120% 80% at 30% 12%,rgba(255,255,255,.55),rgba(255,255,255,0) 48%),var(--crackle-s),linear-gradient(180deg,var(--g1) 0%,var(--g2) 62%,var(--g3) 100%);
+  background-size:auto,90px 90px,auto;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.65),inset 0 -5px 9px rgba(90,60,25,.16),inset 0 0 0 1px rgba(255,255,255,.12),0 3px 0 var(--gfoot),0 6px 12px var(--shadow)}
+.btn:active:not([disabled]),.top nav button:active,.tb button:active,.kb button:active{transform:translateY(2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -3px 6px rgba(90,60,25,.16),0 1px 0 var(--gfoot)}
+.btn.primary,.top nav button[aria-current="page"],.listen{
+  color:#fff;border-color:rgba(10,25,60,.55);text-shadow:0 1px 1px rgba(0,0,0,.25);
+  background:radial-gradient(120% 80% at 30% 12%,rgba(255,255,255,.50),rgba(255,255,255,0) 46%),var(--crackle-s),radial-gradient(ellipse at 50% 120%,rgba(10,20,50,.45),transparent 60%),linear-gradient(180deg,var(--b1) 0%,var(--b2) 55%,var(--b3) 100%);
+  background-size:auto,90px 90px,auto,auto;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),inset 0 -6px 10px rgba(5,15,40,.35),inset 0 0 0 1px rgba(255,255,255,.10),0 3px 0 var(--bfoot),0 7px 14px rgba(25,45,90,.30)}
+.btn.primary:active:not([disabled]){box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -3px 6px rgba(5,15,40,.35),0 1px 0 var(--bfoot)}
+.btn.terra{
+  color:#fff;border-color:rgba(60,25,10,.5);text-shadow:0 1px 1px rgba(0,0,0,.25);
+  background:radial-gradient(120% 80% at 30% 12%,rgba(255,240,225,.50),rgba(255,255,255,0) 46%),var(--crackle-s),linear-gradient(180deg,var(--t1) 0%,var(--t2) 55%,var(--t3) 100%);
+  background-size:auto,90px 90px,auto;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.40),inset 0 -6px 10px rgba(50,15,5,.30),0 3px 0 var(--tfoot),0 7px 14px rgba(110,55,30,.28)}
+.btn[aria-pressed="true"],.tb button[aria-pressed="true"]{
+  background:radial-gradient(120% 80% at 30% 12%,rgba(255,255,255,.45),rgba(255,255,255,0) 48%),var(--crackle-s),linear-gradient(180deg,#d9e2f1 0%,#bccbe5 100%);background-size:auto,90px 90px,auto;
+  border-color:var(--cob);color:#1b2f5c;box-shadow:inset 0 0 0 1.5px var(--cob),inset 0 -4px 8px rgba(30,60,120,.15),0 2px 0 var(--gfoot)}
+:root[data-theme="dark"] .btn[aria-pressed="true"],:root[data-theme="dark"] .tb button[aria-pressed="true"]{background:linear-gradient(180deg,#2e4270,#22325a);color:#e8eefc}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn[aria-pressed="true"],:root:not([data-theme="light"]) .tb button[aria-pressed="true"]{background:linear-gradient(180deg,#2e4270,#22325a);color:#e8eefc}}
+.btn.ghost{background:none;box-shadow:none;border-color:transparent;text-shadow:none}
+.btn[disabled]{filter:saturate(.6)}
+.cell,.cell.fw,#grid{background-color:#efe8d8}
+:root[data-theme="dark"] .cell,:root[data-theme="dark"] .cell.fw,:root[data-theme="dark"] #grid{background-color:var(--card)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .cell,:root:not([data-theme="light"]) .cell.fw,:root:not([data-theme="light"]) #grid{background-color:var(--card)}}
+.prompt .mean.big{background-color:#efe8d8}
+:root[data-theme="dark"] .panel,:root[data-theme="dark"] .tile,:root[data-theme="dark"] .cd,:root[data-theme="dark"] .opt{background-image:radial-gradient(ellipse at 35% 0%,rgba(160,185,235,.07),transparent 65%),var(--crackle-s)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .panel,:root:not([data-theme="light"]) .tile,:root:not([data-theme="light"]) .cd,:root:not([data-theme="light"]) .opt{background-image:radial-gradient(ellipse at 35% 0%,rgba(160,185,235,.07),transparent 65%),var(--crackle-s)}}
+:root[data-theme="dark"] .panel{box-shadow:inset 0 0 0 5px var(--card),inset 0 0 0 6.5px var(--cob-line),inset 0 0 26px rgba(0,0,0,.25),0 3px 0 var(--line2),0 10px 22px var(--shadow)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .panel{box-shadow:inset 0 0 0 5px var(--card),inset 0 0 0 6.5px var(--cob-line),inset 0 0 26px rgba(0,0,0,.25),0 3px 0 var(--line2),0 10px 22px var(--shadow)}}
+:root[data-theme="dark"] .cd.done,:root[data-theme="dark"] .cd.empty{background:none}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .cd.done,:root:not([data-theme="light"]) .cd.empty{background:none}}
+.cd.done,.cd.empty{background:none}
+
 </style>
 </head>
 <body>
