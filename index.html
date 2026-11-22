@@ -679,7 +679,7 @@ function knownCard(S, spreadDays){
   const due = Date.now() + (Math.random() * spreadDays - 1) * DAY; // khoảng một phần mười đến hạn ngay để kiểm lại
   return [Math.round(due / 60000), S, 3, 1, 0, 2, Math.round(Math.min(Date.now(), due - S * DAY) / 60000), 2, 0, S];
 }
-function SET(){ const s = META().set; return {wr:s.wr || 25, nd:s.nd || 15, names:s.names !== false, auto:s.auto === true, snd:s.snd !== false, mins:s.mins || 15, quiet:!!s.quiet, wm:s.wm || 'mix', ord:s.ord || 'net', font:s.font || 'kai', strict:!!s.strict, t3:!!s.t3, wz:s.wz || 'auto'}; }
+function SET(){ const s = META().set; return {wr:s.wr || 25, nd:s.nd || 15, names:s.names !== false, auto:s.auto === true, snd:s.snd !== false, mins:s.mins || 15, quiet:!!s.quiet, wm:s.wm || 'cau', ord:s.ord || 'hinh', font:s.font || 'may', strict:!!s.strict, t3:s.t3 !== false, wz:s.wz || 'auto'}; }
 function enabled(it){ return SET().names || it.g !== 'Tên riêng'; }
 function items(){ return V.items.filter(enabled); }
 function retention(sk){
@@ -1851,17 +1851,17 @@ function fxPanel(save){
 }
 
 /* ---------- cách viết: thứ tự nét và kiểu chữ (22/11/2026, theo ý các bạn) ----------
-   meta.set.ord: 'net' viết đúng thứ tự nét (mặc định) | 'hinh' chỉ cần đúng mặt chữ, nét nào trước cũng được.
-   meta.set.font: 'kai' chữ khải, vẽ bằng dữ liệu nét (mặc định) | 'may' chữ máy tính, dùng phông hệ thống như trên điện thoại và web. */
+   meta.set.ord: 'hinh' chỉ cần đúng mặt chữ, nét nào trước cũng được (mặc định từ 22/11, theo các bạn) | 'net' viết đúng thứ tự nét.
+   meta.set.font: 'may' chữ máy tính, dùng phông hệ thống như trên điện thoại và web (mặc định) | 'kai' chữ khải, vẽ bằng dữ liệu nét. */
 function applyFont(){ try { document.documentElement.setAttribute('data-font', SET().font); } catch (e) {} }
 function writeStylePanel(set, save){
   const pick = (k, opts, cur, after) => h('div', {class:'row'}, opts.map(o => h('button', {type:'button', class:'btn', 'aria-pressed':String(cur === o[0]), onclick:e => { save(k, o[0]); Array.from(e.currentTarget.parentNode.children).forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); if (after) after(o[0]); }}, o[1])));
   return h('div', {class:'field'},
     h('span', {style:'font-weight:600'}, 'Thứ tự nét'),
-    pick('ord', [['net', 'Viết đúng thứ tự nét'], ['hinh', 'Chỉ cần đúng mặt chữ']], set.ord),
+    pick('ord', [['hinh', 'Chỉ cần đúng mặt chữ'], ['net', 'Viết đúng thứ tự nét']], set.ord),
     h('small', {class:'fine'}, 'Chỉ cần đúng mặt chữ: không còn bài viết từng nét, viết nét nào trước cũng được, viết ngược chiều cũng được; app chỉ xem chữ có đủ nét và đúng hình không. Bài vẫn không hiện chữ mờ sẵn; viết sai thì được viết lại một lần kèm lời nhắc rồi mới thấy đáp án.'),
     h('span', {style:'font-weight:600;margin-top:8px'}, 'Kiểu chữ'),
-    pick('font', [['kai', 'Chữ khải (nét bút lông)'], ['may', 'Chữ máy tính (như trên mạng)']], set.font, v => { applyFont(); if (v === 'may' && META().set.strict) { save('strict', false); const el = document.getElementById('setStrict'); if (el) el.checked = false; } }),
+    pick('font', [['may', 'Chữ máy tính (như trên mạng)'], ['kai', 'Chữ khải (nét bút lông)']], set.font, v => { applyFont(); if (v === 'may' && META().set.strict) { save('strict', false); const el = document.getElementById('setStrict'); if (el) el.checked = false; } }),
     h('small', {class:'fine'}, 'Chữ máy tính: chữ trong app hiện giống chữ đọc trên điện thoại và trang web. Bài viết chấm thoáng: nét thẳng thay nét cong, nét không móc, hai nét viết liền hoặc một nét tách đôi như chữ in đều được tính đúng. Bản xem thứ tự nét vẫn là chữ khải.'));
 }
 
@@ -2038,7 +2038,7 @@ function viewSettings(){
       h('div', {class:'field'}, h('label', {for:'setWr'}, 'Tỷ lệ viết tay trong phiên: ', wrOut), h('input', {type:'range', id:'setWr', min:10, max:50, step:5, value:set.wr, oninput:e => { wrOut.textContent = e.currentTarget.value + '%'; save('wr', +e.currentTarget.value); }}), h('small', {class:'fine'}, 'Mặc định 25%. Phần ôn nhanh co giãn theo.')),
       h('div', {class:'field'}, h('label', {for:'setNd'}, 'Từ mới mỗi ngày: ', ndOut), h('input', {type:'range', id:'setNd', min:5, max:40, step:5, value:set.nd, oninput:e => { ndOut.textContent = e.currentTarget.value + ' từ'; save('nd', +e.currentTarget.value); }})),
       h('div', {class:'field'}, h('span', {style:'font-weight:600'}, 'Bài viết trong phiên học'),
-        h('div', {class:'row'}, [['mix', 'Bậc 1 viết từng nét, bậc 2 viết cả từ rồi chấm'], ['net', 'Luôn chấm từng nét'], ['cau', 'Luôn viết cả từ rồi chấm']].map(o => h('button', {type:'button', class:'btn', 'aria-pressed':String(set.wm === o[0]), onclick:e => { save('wm', o[0]); Array.from(e.currentTarget.parentNode.children).forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); }}, o[1])))),
+        h('div', {class:'row'}, [['cau', 'Luôn viết cả từ rồi chấm'], ['mix', 'Bậc 1 viết từng nét, bậc 2 viết cả từ rồi chấm'], ['net', 'Luôn chấm từng nét']].map(o => h('button', {type:'button', class:'btn', 'aria-pressed':String(set.wm === o[0]), onclick:e => { save('wm', o[0]); Array.from(e.currentTarget.parentNode.children).forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); }}, o[1])))),
       h('div', {class:'field'}, h('span', {style:'font-weight:600'}, 'Ô viết khi viết tay cả câu'),
         h('div', {class:'row'}, [['auto', 'Tự động theo màn hình'], ['s', 'Ô nhỏ'], ['m', 'Ô vừa'], ['l', 'Ô lớn'], ['pad', 'Bảng lớn, viết từng chữ']].map(o => h('button', {type:'button', class:'btn', 'aria-pressed':String(set.wz === o[0]), onclick:e => { save('wz', o[0]); Array.from(e.currentTarget.parentNode.children).forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); }}, o[1]))),
         h('small', {class:'fine'}, 'Trên điện thoại, Tự động dùng bảng lớn để ngón tay viết thoải mái. Đổi được ngay trong lúc làm bài.')),
@@ -2046,7 +2046,7 @@ function viewSettings(){
       sw('setStrict', 'Chấm nét chặt theo chữ khải (mặc định chấm thoáng, nhận cả nét kiểu chữ in)', 'strict', set.strict),
       sw('setQuiet', 'Chế độ yên lặng: bỏ bài nghe, không tự phát âm', 'quiet', set.quiet),
       sw('setSnd', 'Tự phát âm khi hiện đáp án', 'snd', set.snd), sw('setAuto', 'Tự sang thẻ kế khi trả lời đúng', 'auto', set.auto), sw('setNames', 'Học cả năm tên riêng', 'names', set.names),
-      sw('setT3', 'Gộp thanh 1, thanh 4 và thanh nhẹ thành một lựa chọn trong bài pinyin (mặc định tắt: học đủ 5 thanh)', 't3', set.t3)),
+      sw('setT3', 'Gộp thanh 1, thanh 4 và thanh nhẹ thành một lựa chọn trong bài pinyin (mặc định bật; tắt để học đủ 5 thanh)', 't3', set.t3)),
     fxPanel(save),
     h('section', {class:'panel'}, h('h2', null, 'Dữ liệu'),
       h('p', {class:'muted'}, 'Kho từ: ' + V.items.length + ' mục (' + V.seedN + ' mục gốc, ' + V.dbN + ' mục nạp qua kho dữ liệu; kho dữ liệu: ' + V.dbState + '). Âm thanh thu sẵn: ' + Object.keys(Snd.index || {}).length + ' mục.'),
