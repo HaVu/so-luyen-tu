@@ -2252,7 +2252,10 @@ function viewPlaceGroups(){
 function blitzPool(){ return items().filter(it => enabled(it) && !P('m')[it.h] && placedState(it) === 0); }
 function blitzGen(cfg, S){
   const set = SET(), words = cfg.words.slice(), st = {};
-  const ladder = it => { const L = it.chars.length ? ['wt', 'm1'] : ['m1']; if (cfg.write && it.chars.length) L.push('ws'); const ear = listenable(it) && !set.quiet; if (ear) L.push('l2'); if (it.syl) L.push(it.chars.length >= 4 ? 'p1' : 'p2'); L.push(ear ? 'l1' : 'm1'); return L; };
+  /* viết trước: tô theo mẫu mờ (wt), rồi viết lại không nhìn mẫu (wb); viết đúng hết cả lô mới sang các câu đố nghĩa, nghe, pinyin.
+     Đang bật Viết đúng thứ tự nét thì hai bước viết chấm từng nét; còn lại viết cả chữ rồi chấm. */
+  const ladder = it => { const L = it.chars.length ? ['wt', 'wb', 'm1'] : ['m1']; const ear = listenable(it) && !set.quiet; if (ear) L.push('l2'); if (it.syl) L.push(it.chars.length >= 4 ? 'p1' : 'p2'); L.push(ear ? 'l1' : 'm1'); return L; };
+  const nW = it => it.chars.length ? 2 : 0, writing = it => st[it.h].lv < nW(it);
   words.forEach(it => { st[it.h] = {lv:0, seen:false, due:0, L:ladder(it)}; });
   const bset = new Set(words.map(it => it.h)), sentUsed = new Set(), waiting = words.slice();
   let prev = null, step = 0, lastSent = 0, script = [], recent = [];
@@ -2261,21 +2264,20 @@ function blitzGen(cfg, S){
   S.onResult = (ex, ok) => { if (ex.bw) ex.okAll = ex.okAll !== false && ok; };
   const mk = it => {
     const k = st[it.h].L[st[it.h].lv], b = {item:it, bw:it.h};
-    if (k === 'wt') return SET().ord === 'net' ? Object.assign(b, {sk:'w', key:it.chars[0], kind:'w', chars:Array.from(new Set(it.chars)).slice(0, 4), trace:true}) : Object.assign(b, {sk:'w', key:it.chars[0], kind:'ws', hz:it.h, trace:true});
-    if (k === 'ws') return Object.assign(b, {sk:'w', key:it.chars[0], kind:'ws', hz:it.h});
+    if (k === 'wt' || k === 'wb') { const tr = k === 'wt'; return SET().ord === 'net' ? Object.assign(b, {sk:'w', key:it.chars[0], kind:'w', chars:Array.from(new Set(it.chars)).slice(0, 4), trace:tr}) : Object.assign(b, {sk:'w', key:it.chars[0], kind:'ws', hz:it.h, trace:tr}); }
     return Object.assign(b, {sk:k[0], key:it.h, kind:k});
   };
   const pickSent = () => {
     let best = null, bs = 0;
     SENTS.forEach(x => {
       if (sentUsed.has(x.h)) return; let b = 0, u = 0;
-      x.t.forEach(t => { if (bset.has(t)) { if (st[t].seen && st[t].lv >= 1) b++; else u++; } else if (!(V.byH[t] && P('m')[t])) u += 0.5; });
+      x.t.forEach(t => { if (bset.has(t)) { if (st[t].seen && st[t].lv >= 3) b++; else u++; } else if (!(V.byH[t] && P('m')[t])) u += 0.5; });
       const sc = b * 3 - u; if (b && sc > bs) { bs = sc; best = x; }
     });
     if (best) sentUsed.add(best.h); return best;
   };
   return function next(){
-    if (prev && prev.bw && prev.okAll != null){ const s = st[prev.bw]; if (prev.okAll) { s.lv++; s.due = step + 2 + s.lv; } else { s.lv = Math.max(0, s.lv - 1); s.due = step + 2; } }
+    if (prev && prev.bw && prev.okAll != null){ const s = st[prev.bw]; const wr = s.lv < 2 && s.L[0] === 'wt'; if (prev.okAll) { s.lv++; s.due = step + (wr ? 1 : 2 + s.lv); } else { s.lv = wr ? 0 : Math.max(s.L[0] === 'wt' ? 2 : 0, s.lv - 1); s.due = step + (wr ? 1 : 2); } }
     prev = null; step++;
     S.blitz.done = words.filter(it => done(it.h)).length;
     if (script.length) return (prev = script.shift());
@@ -2288,6 +2290,8 @@ function blitzGen(cfg, S){
       return (prev = script.shift());
     }
     if (!active.length) return null;
+    const wq = active.filter(writing);
+    if (wq.length){ wq.sort((a, b) => (st[a.h].due - st[b.h].due) || (st[a.h].lv - st[b.h].lv)); const pick = wq.length > 1 && wq[0].h === recent[recent.length - 1] ? wq[1] : wq[0]; recent.push(pick.h); if (recent.length > 2) recent.shift(); return (prev = mk(pick)); }
     if (step - lastSent >= 4){ const x = pickSent(); if (x) { lastSent = step; return (prev = {sk:'c', kind:'ord', sent:x}); } }
     const cand = active.length > 2 ? active.filter(it => recent.indexOf(it.h) < 0) : active;
     cand.sort((a, b) => (st[a.h].due - st[b.h].due) || (st[a.h].lv - st[b.h].lv));
@@ -2314,7 +2318,7 @@ function viewBlitz(pre){
     Session.startBlitz({words:w, write:st.write});
   }}, 'Bắt đầu cấp tốc');
   const paint = () => {
-    const w = pickWords(), steps = w.reduce((a, it) => a + 1 + (listenable(it) && !set.quiet ? 2 : 0) + (it.syl ? 1 : 0) + (st.write ? 1 : 0) + 2, 0);
+    const w = pickWords(), steps = w.reduce((a, it) => a + 1 + (listenable(it) && !set.quiet ? 2 : 0) + (it.syl ? 1 : 0) + 4, 0);
     info.textContent = w.length ? w.length + ' từ, khoảng ' + Math.max(3, Math.round(steps * 0.22 + w.length * 0.3)) + ' phút nếu ít sai.' : 'Không có từ nào chưa học trong lựa chọn này.';
     sample.textContent = w.map(it => it.h).join('  ');
     go.disabled = !w.length;
@@ -2326,11 +2330,10 @@ function viewBlitz(pre){
     groups.map(g => h('option', {value:'g:' + g, selected:st.src === 'g:' + g}, 'Nhóm ' + g + ' (' + pool.filter(it => groupOf(it) === g).length + ')')));
   show('pr', [
     h('h1', null, 'Cấp tốc từ mới'),
-    h('p', {class:'muted'}, 'Dồn sức học một lô từ mới cho thật nhanh thuộc. Mỗi từ bắt đầu bằng tập viết theo nét mờ cho đúng chữ, rồi nhận mặt chữ, viết lại không nhìn mẫu, nghe và pinyin; sai thì hỏi lại ngay. Xen giữa là các câu chứa nhiều từ của lô nhất. Học xong cả lô thì quay lại học thường, các từ này đã vào lịch ôn.'),
+    h('p', {class:'muted'}, 'Dồn sức học một lô từ mới cho thật nhanh thuộc. Trước hết tập viết: tô theo chữ mờ, rồi viết lại không nhìn mẫu, sai thì tô lại. Viết đúng hết các từ trong đợt mới sang đố nghĩa, nghe và pinyin. Đang bật Viết đúng thứ tự nét thì app chấm từng nét, không thì chấm cả chữ. Xen giữa là các câu chứa nhiều từ của lô nhất. Học xong cả lô thì quay lại học thường, các từ này đã vào lịch ôn.'),
     !pool.length ? h('div', {class:'banner'}, 'Không còn từ nào chưa học. Khi nạp từ mới, anh vào đây để học dồn.') : null,
     h('section', {class:'panel'}, h('h2', null, 'Lấy từ nào'), srcSel, sample),
     h('section', {class:'panel'}, h('h2', null, 'Số từ mỗi lô'), choice([[8, '8'], [12, '12'], [16, '16'], [24, '24'], [0, 'Cả lựa chọn']], 'n'),
-      h('h2', null, 'Viết lại không nhìn mẫu'), choice([[true, 'Có'], [false, 'Chỉ tập viết theo nét mờ']], 'write'),
       info, h('div', {class:'row'}, go))
   ]);
   paint();
