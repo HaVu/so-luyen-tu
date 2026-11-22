@@ -600,6 +600,7 @@ html[data-art] .opt.right,html[data-art] .tb button.right,html[data-art] .tok.ri
 .ordfix{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .ordfix .tok{pointer-events:none;padding:6px 12px;border:2px solid var(--line);border-radius:12px;background:var(--card);font-size:24px;font-family:var(--han)}
 @media (max-width:440px){.tb button{min-width:0;padding:4px 0;font-size:15px;letter-spacing:-.02em}}
+.cell .trace{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--han);color:var(--ink);opacity:.17;pointer-events:none;line-height:1}
 
 </style>
 </head>
@@ -1251,7 +1252,7 @@ function exWrite(ex, api){
     const d = await Strokes.get(ch).catch(() => null);
     if (!d) { status.textContent = 'Chưa có dữ liệu nét cho chữ này, bỏ qua.'; return advance(); }
     const total = d.strokes.length, miss = lvl === 1 ? 2 : 3; let tm = 0; btnShow.hidden = true;
-    writer = window.HanziWriter.create(wbox, ch, {width:px, height:px, padding:Math.round(px * 0.07), showCharacter:false, showOutline:false,
+    writer = window.HanziWriter.create(wbox, ch, {width:px, height:px, padding:Math.round(px * 0.07), showCharacter:false, showOutline:!!ex.trace,
       strokeColor:cssVar('--ink'), outlineColor:cssVar('--outline'), drawingColor:cssVar('--jade'), highlightColor:cssVar('--seal'),
       drawingWidth:Math.max(6, Math.round(px / 40)), showHintAfterMisses:miss, highlightOnComplete:true, leniency:SET().strict ? 1 : 1.7, acceptBackwardsStrokes:!SET().strict, charDataLoader:(c, on) => on(d)});
     status.textContent = 'Viết từ trí nhớ: chữ thứ ' + (ti + 1) + '/' + targets.length + ', ' + total + ' nét';
@@ -1475,9 +1476,9 @@ function exFree(ex, api){
   const size = 240, pxFor = m => m === 's' ? Math.min(autoPx, 96) : m === 'l' ? Math.min(Wd, 260) : m === 'xl' ? Math.min(Wd, 380) : autoPx;
   let fz = META().set.wfz || 'm';
   const owner = {locked:false, last:null}, cells = [], row = h('div', {class:'word', lang:'zh-Hans'});
-  const applyFz = () => { const px = pxFor(fz); cells.forEach(c => { c.el.style.width = px + 'px'; c.el.style.height = px + 'px'; }); Array.from(fzBar.querySelectorAll('button')).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === fz))); };
+  const applyFz = () => { const px = pxFor(fz); cells.forEach(c => { c.el.style.width = px + 'px'; c.el.style.height = px + 'px'; if (c.tr) c.tr.style.fontSize = Math.round(px * 0.8) + 'px'; }); Array.from(fzBar.querySelectorAll('button')).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === fz))); };
   const fzBar = h('div', {class:'row modes', style:'justify-content:center'}, h('span', {class:'muted'}, 'Cỡ ô:'), [['s', 'Nhỏ'], ['m', 'Vừa'], ['l', 'Lớn'], ['xl', 'Rất lớn']].map(o => h('button', {type:'button', class:'btn small', 'data-m':o[0], onclick:() => { fz = o[0]; META().set.wfz = fz; Store.mark('meta'); applyFz(); }}, o[1])));
-  chars.forEach(c => { if (isHan(c)) { const cell = inkCell(size, owner); cell.ch = c; cells.push(cell); row.appendChild(h('span', {class:'fwcol'}, cell.el, cell.note = h('span', {class:'fwnote'}))); } else if (c.trim()) row.appendChild(h('span', {class:'gap', text:c})); });
+  chars.forEach(c => { if (isHan(c)) { const cell = inkCell(size, owner); cell.ch = c; cells.push(cell); if (ex.trace) cell.el.insertBefore(cell.tr = h('span', {class:'trace', 'aria-hidden':'true'}, c), cell.el.querySelector('canvas')); row.appendChild(h('span', {class:'fwcol'}, cell.el, cell.note = h('span', {class:'fwnote'}))); } else if (c.trim()) row.appendChild(h('span', {class:'gap', text:c})); });
   const py = sent ? sent.p : it.p, mean = sent ? sent.m : it.m, after = h('div');
   const pyEl = h('div', {class:'py', text:py, hidden:!!sent});
   const tools = h('div', {class:'row', style:'justify-content:center'},
@@ -1538,7 +1539,7 @@ function exFree(ex, api){
   }
   KEYS = {Enter:check};
   applyFz();
-  return [h('div', {class:'prompt'}, h('p', {class:'ask'}, sent ? 'Viết cả câu, xong mới chấm' : 'Viết cả từ, xong mới chấm'), h('div', {class:'mean', text:mean}), pyEl), fzBar, row, retryBox, tools, after];
+  return [h('div', {class:'prompt'}, h('p', {class:'ask'}, ex.trace ? 'Từ mới: tô theo chữ mờ cho quen mặt chữ, xong bấm Chấm' : sent ? 'Viết cả câu, xong mới chấm' : 'Viết cả từ, xong mới chấm'), h('div', {class:'mean', text:mean}), pyEl), fzBar, row, retryBox, tools, after];
 }
 /* ================= viết tay cả câu: app đọc từng ô, so với câu mẫu, rồi mới chấm =================
    ex: {kind:'sv' (dịch từ tiếng Việt) | 'sd' (nghe chép), sent:{t,p,m,h,alt?}, hz, item?}
@@ -2226,7 +2227,7 @@ function viewPlaceGroups(){
 function blitzPool(){ return items().filter(it => enabled(it) && !P('m')[it.h] && placedState(it) === 0); }
 function blitzGen(cfg, S){
   const set = SET(), words = cfg.words.slice(), st = {};
-  const ladder = it => { const L = ['m1']; const ear = listenable(it) && !set.quiet; if (ear) L.push('l2'); if (it.syl) L.push(it.chars.length >= 4 ? 'p1' : 'p2'); if (cfg.write && it.chars.length) L.push('ws'); L.push(ear ? 'l1' : 'm1'); return L; };
+  const ladder = it => { const L = it.chars.length ? ['wt', 'm1'] : ['m1']; if (cfg.write && it.chars.length) L.push('ws'); const ear = listenable(it) && !set.quiet; if (ear) L.push('l2'); if (it.syl) L.push(it.chars.length >= 4 ? 'p1' : 'p2'); L.push(ear ? 'l1' : 'm1'); return L; };
   words.forEach(it => { st[it.h] = {lv:0, seen:false, due:0, L:ladder(it)}; });
   const bset = new Set(words.map(it => it.h)), sentUsed = new Set(), waiting = words.slice();
   let prev = null, step = 0, lastSent = 0, script = [], recent = [];
@@ -2235,6 +2236,7 @@ function blitzGen(cfg, S){
   S.onResult = (ex, ok) => { if (ex.bw) ex.okAll = ex.okAll !== false && ok; };
   const mk = it => {
     const k = st[it.h].L[st[it.h].lv], b = {item:it, bw:it.h};
+    if (k === 'wt') return SET().ord === 'net' ? Object.assign(b, {sk:'w', key:it.chars[0], kind:'w', chars:Array.from(new Set(it.chars)).slice(0, 4), trace:true}) : Object.assign(b, {sk:'w', key:it.chars[0], kind:'ws', hz:it.h, trace:true});
     if (k === 'ws') return Object.assign(b, {sk:'w', key:it.chars[0], kind:'ws', hz:it.h});
     return Object.assign(b, {sk:k[0], key:it.h, kind:k});
   };
@@ -2274,7 +2276,7 @@ function viewBlitz(pre){
   const dates = Array.from(new Set(pool.map(it => it.added).filter(Boolean))).sort().reverse();
   const groups = Array.from(new Set(pool.map(groupOf))).sort();
   const saved = META().set.bz || {};
-  const st = {src:pre || saved.src || (dates[0] ? 'd:' + dates[0] : 'all'), n:saved.n || 12, write:saved.write != null ? saved.write : set.wr > 0};
+  const st = {src:pre || saved.src || (dates[0] ? 'd:' + dates[0] : 'all'), n:saved.n || 12, write:saved.write != null ? saved.write : true};
   const pickWords = () => {
     let list = st.src === 'all' ? newQueue().filter(it => pool.indexOf(it) >= 0)
       : st.src.slice(0, 2) === 'd:' ? pool.filter(it => it.added === st.src.slice(2)) : pool.filter(it => groupOf(it) === st.src.slice(2));
@@ -2287,7 +2289,7 @@ function viewBlitz(pre){
     Session.startBlitz({words:w, write:st.write});
   }}, 'Bắt đầu cấp tốc');
   const paint = () => {
-    const w = pickWords(), steps = w.reduce((a, it) => a + 1 + (listenable(it) && !set.quiet ? 2 : 0) + (it.syl ? 1 : 0) + (st.write ? 1 : 0) + 1, 0);
+    const w = pickWords(), steps = w.reduce((a, it) => a + 1 + (listenable(it) && !set.quiet ? 2 : 0) + (it.syl ? 1 : 0) + (st.write ? 1 : 0) + 2, 0);
     info.textContent = w.length ? w.length + ' từ, khoảng ' + Math.max(3, Math.round(steps * 0.22 + w.length * 0.3)) + ' phút nếu ít sai.' : 'Không có từ nào chưa học trong lựa chọn này.';
     sample.textContent = w.map(it => it.h).join('  ');
     go.disabled = !w.length;
@@ -2299,11 +2301,11 @@ function viewBlitz(pre){
     groups.map(g => h('option', {value:'g:' + g, selected:st.src === 'g:' + g}, 'Nhóm ' + g + ' (' + pool.filter(it => groupOf(it) === g).length + ')')));
   show('pr', [
     h('h1', null, 'Cấp tốc từ mới'),
-    h('p', {class:'muted'}, 'Dồn sức học một lô từ mới cho thật nhanh thuộc. Mỗi từ được hỏi liên tục qua nghĩa, nghe, pinyin và viết, sai thì hỏi lại ngay. Xen giữa là các câu chứa nhiều từ của lô nhất. Học xong cả lô thì quay lại học thường, các từ này đã vào lịch ôn.'),
+    h('p', {class:'muted'}, 'Dồn sức học một lô từ mới cho thật nhanh thuộc. Mỗi từ bắt đầu bằng tập viết theo nét mờ cho đúng chữ, rồi nhận mặt chữ, viết lại không nhìn mẫu, nghe và pinyin; sai thì hỏi lại ngay. Xen giữa là các câu chứa nhiều từ của lô nhất. Học xong cả lô thì quay lại học thường, các từ này đã vào lịch ôn.'),
     !pool.length ? h('div', {class:'banner'}, 'Không còn từ nào chưa học. Khi nạp từ mới, anh vào đây để học dồn.') : null,
     h('section', {class:'panel'}, h('h2', null, 'Lấy từ nào'), srcSel, sample),
     h('section', {class:'panel'}, h('h2', null, 'Số từ mỗi lô'), choice([[8, '8'], [12, '12'], [16, '16'], [24, '24'], [0, 'Cả lựa chọn']], 'n'),
-      h('h2', null, 'Có viết tay không'), choice([[true, 'Có viết'], [false, 'Không viết']], 'write'),
+      h('h2', null, 'Viết lại không nhìn mẫu'), choice([[true, 'Có'], [false, 'Chỉ tập viết theo nét mờ']], 'write'),
       info, h('div', {class:'row'}, go))
   ]);
   paint();
