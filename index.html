@@ -1317,7 +1317,7 @@ function exFree(ex, api){
     paint(); after.appendChild(verdict); const allOk = res.every(g => g.rating >= 2); if (tries === 1) { ex.fxDone = true; FX.answer(allOk); } else if (allOk) FX.answer(true, true);
     const model = wordEl(hz, sent ? 60 : 76);
     after.appendChild(h('div', {class:'info'}, model, printRow(hz), h('div', {class:'py', text:py}), h('div', {class:'mean', text:mean}),
-      h('div', {class:'row', style:'justify-content:center'}, demoBtn(model), it ? audioBtns(it) : h('button', {type:'button', class:'btn', onclick:() => speak(hz)}, 'Nghe'), flagBtn(hz)),
+      h('div', {class:'row', style:'justify-content:center'}, demoBtn(model), it ? audioBtns(it) : h('button', {type:'button', class:'btn', onclick:() => playSent({sent, hz})}, 'Nghe'), flagBtn(hz)),
       sent ? h('small', {class:'fine'}, 'Câu do Claude đặt từ các từ anh đã học.') : null));
     const go = () => {
       const worst = {}; cells.forEach((c, i) => { worst[c.ch] = Math.min(worst[c.ch] || 4, res[i].rating); });
@@ -1544,7 +1544,7 @@ function exOrder(ex, api){
     after.appendChild(h('p', {class:'verdict ' + (ok ? 'ok' : 'bad')}, ok ? 'Đúng' : 'Chưa khớp câu mẫu'));
     const model = wordEl(hz, 60);
     after.appendChild(h('div', {class:'info'}, model, h('div', {class:'py', text:py}), h('div', {class:'mean', text:mean}),
-      h('div', {class:'row', style:'justify-content:center'}, demoBtn(model), it ? audioBtns(it) : h('button', {type:'button', class:'btn', onclick:() => speak(hz)}, 'Nghe'), flagBtn(sent ? hz : it.h)),
+      h('div', {class:'row', style:'justify-content:center'}, demoBtn(model), it ? audioBtns(it) : h('button', {type:'button', class:'btn', onclick:() => playSent({sent, hz})}, 'Nghe'), flagBtn(sent ? hz : it.h)),
       sent ? h('small', {class:'fine'}, 'Câu do Claude đặt từ các từ anh đã học. Tiếng Trung đôi khi có cách xếp khác cũng đúng.') : null));
     const go = () => api.next(); after.appendChild(nextRow(go)); KEYS = {Enter:go};
   }
@@ -2190,7 +2190,7 @@ async function boot(){
     show('err', [h('h1', null, 'Chưa mở được sổ'), h('p', {class:'muted'}, 'Không đọc được dữ liệu (' + ((e && (e.code || e.message)) || 'lỗi') + '). Tiến độ của anh không bị ghi đè. Kiểm tra mạng rồi thử lại.'), h('div', {class:'row'}, h('button', {type:'button', class:'btn primary big', onclick:() => { view().textContent = ''; view().appendChild(h('p', {class:'muted', id:'bootmsg'}, 'Đang mở sổ…')); boot(); }}, 'Thử lại'))]);
   }
 }
-window.__app = {sentProgress, startSent, SENTS:() => SENTS, exSent, sentAlign, exTones, Cloud, Ink, exFree, practiceGen, readySents, SET, viewPractice, viewSettings, Store, V, Session, Strokes, Snd, segment, grade, stats, P, META, viewHome, viewPlacement, viewPlaceGroups, applyPlacement, items, newQueue, dueList, unplaced};
+window.__app = {exOrder, sentProgress, startSent, SENTS:() => SENTS, exSent, sentAlign, exTones, Cloud, Ink, exFree, practiceGen, readySents, SET, viewPractice, viewSettings, Store, V, Session, Strokes, Snd, segment, grade, stats, P, META, viewHome, viewPlacement, viewPlaceGroups, applyPlacement, items, newQueue, dueList, unplaced};
 boot();
 })();
 </script>
