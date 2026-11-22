@@ -161,7 +161,8 @@ small.fine{font-size:13px;color:var(--muted);line-height:1.4}
 .mean.big{font-size:24px;font-weight:700;text-align:center}
 .readline{text-align:center;color:var(--muted);margin:6px 0} .hanline{font-family:var(--han);font-size:24px;color:var(--ink)}
 .refline{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;font-family:var(--han);font-size:28px}
-.tok{padding:2px 8px;border-radius:8px} .tok.ok{background:var(--ok-bg);color:var(--ok)} .tok.bad{background:var(--bad-bg);color:var(--bad)}
+.tok{padding:2px 8px;border-radius:8px} .punc{color:var(--muted)}
+.tpanel{display:flex;flex-direction:column;gap:8px;border-top:1px dashed var(--line);padding-top:12px;margin-top:4px} .tok.ok{background:var(--ok-bg);color:var(--ok)} .tok.bad{background:var(--bad-bg);color:var(--bad)}
 .fwnote{font-size:13.5px;text-align:center;min-height:18px;color:var(--muted)} .fwnote.ok{color:var(--ok)} .fwnote.bad{color:var(--bad)} .fwnote.warn{color:var(--warn)}
 .btn.small{min-height:36px;padding:4px 10px;font-size:13.5px}
 .ordrow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;min-height:64px;align-items:center}
@@ -1083,24 +1084,24 @@ function sentAlign(cells, exp, data, size, strict){
 function playSent(ex, rate){
   if (SET().quiet) return;
   if (ex.item && Snd.has(ex.item.h)) return void Snd.play(ex.item, rate || 1);
-  if (Snd.tts) return void speak(ex.hz, rate && rate < 1 ? 0.55 : 0.85);
+  if (Snd.tts) return void speak((ex.sent && ex.sent.d) || ex.hz, rate && rate < 1 ? 0.55 : 0.85);
   const its = (ex.sent ? ex.sent.t : []).map(t => V.byH[t]).filter(Boolean); let k = 0; // máy không có giọng đọc: phát lần lượt âm thu sẵn của từng từ
   const step = () => { if (k >= its.length) return; Snd.play(its[k++], rate || 1).then(() => { const a = Snd.el, done = () => { a.removeEventListener('ended', done); setTimeout(step, 90); }; a.addEventListener('ended', done); }); };
   step();
 }
 function exSent(ex, api){
-  const sent = ex.sent, hz = ex.hz, exp = hanChars(hz), dict = ex.kind === 'sd', toks = sent.t || [hz];
+  const sent = ex.sent, hz = ex.hz, exp = hanChars(hz), dict = ex.kind === 'sd', toks = sent.tp || sent.t || [hz], from = sent.n ? 'Câu số ' + sent.n + ' của thầy. ' : '';
   /* Lưới ô cố định số cột để hàng mới thêm vào không làm xê dịch các ô đang viết. Nét được ghi theo đơn vị 140 bất kể ô hiện to hay nhỏ. */
-  const W0 = view().clientWidth, per = W0 >= 700 ? 5 : (W0 >= 520 ? 4 : 3), size = 140;
+  const W0 = view().clientWidth, L = exp.length, per = W0 >= 700 ? (L > 12 ? 6 : 5) : (W0 >= 520 ? (L > 10 ? 5 : 4) : (L > 9 ? 4 : 3)), size = 140;
   const owner = {locked:false, last:null}, cells = [], grid = h('div', {class:'sgrid', lang:'zh-Hans', style:'grid-template-columns:repeat(' + per + ',minmax(0,1fr));max-width:' + (per * 150 + (per - 1) * 6) + 'px'}), after = h('div'), hintEl = h('div', {class:'hintline', 'aria-live':'polite'});
   const fit = el => { el.style.width = '100%'; el.style.height = 'auto'; el.style.aspectRatio = '1'; return el; };
   const addRow = () => { for (let k = 0; k < per; k++){ const c = inkCell(size, owner); cells.push(c); grid.appendChild(fit(c.el)); } };
-  owner.onInk = c => { if (cells.indexOf(c) >= cells.length - 1 && cells.length < per * 5) addRow(); };
+  owner.onInk = c => { if (cells.indexOf(c) >= cells.length - 1 && cells.length < 72) addRow(); };
   addRow();
   let hint = 0; const t0 = Date.now();
   const hintBtn = h('button', {type:'button', class:'btn', onclick:() => {
     if (owner.locked || hint >= 3) return; hint++;
-    if (hint === 1) hintEl.appendChild(h('p', null, 'Câu có ' + exp.length + ' chữ, chia thành các từ: ', h('span', {class:'boxes'}, toks.map(t => '□'.repeat(hanChars(t).length)).join('  '))));
+    if (hint === 1) hintEl.appendChild(h('p', null, 'Câu có ' + exp.length + ' chữ, chia thành các từ: ', h('span', {class:'boxes'}, toks.map(t => hanChars(t).length ? '□'.repeat(hanChars(t).length) : t).join(' '))));
     else if (hint === 2) hintEl.appendChild(h('p', {class:'py'}, sent.p));
     else if (dict) hintEl.appendChild(h('p', null, 'Nghĩa: ' + sent.m)); else { playSent(ex, 1); hintEl.appendChild(h('p', null, 'Đang đọc câu. ', h('button', {type:'button', class:'btn small', onclick:() => playSent(ex, 0.65)}, 'Nghe chậm'))); }
     hintBtn.textContent = hint >= 3 ? 'Hết gợi ý' : 'Gợi ý thêm (' + hint + '/3)'; hintBtn.disabled = hint >= 3;
@@ -1136,25 +1137,28 @@ function exSent(ex, api){
       grid.appendChild(col); cols.push(col);
     });
     /* điểm của từng chữ mẫu: 3 đúng, 2 gần đúng hoặc đúng chữ nhưng sai chỗ, 1 sai hoặc thiếu */
-    const rate = j => { let r = 1; ops.forEach(o => { if (o.j === j && (o.st === 'ok' || o.over)) r = Math.max(r, 3); else if (o.j === j && o.st === 'near') r = Math.max(r, 2); else if (o.movedTo === j) r = Math.max(r, 2); }); return hint >= 2 ? Math.min(r, 2) : r; };
+    let allOver = false;
+    const rate = j => { if (allOver) return hint >= 2 ? 2 : 3; let r = 1; ops.forEach(o => { if (o.j === j && (o.st === 'ok' || o.over)) r = Math.max(r, 3); else if (o.j === j && o.st === 'near') r = Math.max(r, 2); else if (o.movedTo === j) r = Math.max(r, 2); }); return hint >= 2 ? Math.min(r, 2) : r; };
     const verdict = h('p', {class:'verdict'}), readEl = h('p', {class:'readline'}), ref = h('div', {class:'refline', lang:'zh-Hans'});
     function paint(){
       const rs = exp.map((c, j) => rate(j)), good = rs.filter(r => r >= 2).length, miss = ops.filter(o => o.st === 'miss' && !o.taken).length, extra = ops.filter(o => o.st === 'extra' && o.movedTo == null).length, moved = ops.filter(o => o.movedTo != null).length, wrong = ops.filter(o => o.st === 'wrong' && o.movedTo == null && !o.over).length;
-      const perfect = good === exp.length && !extra && !moved, parts = [];
+      const perfect = allOver || (good === exp.length && !extra && !moved), parts = [];
       if (wrong) parts.push(wrong + ' chữ viết chưa ra'); if (miss) parts.push('thiếu ' + miss + ' chữ'); if (extra) parts.push('thừa ' + extra + ' ô'); if (moved) parts.push(moved + ' chữ sai vị trí');
       verdict.className = 'verdict ' + (perfect ? 'ok' : (good ? 'warn' : 'bad'));
-      verdict.textContent = perfect ? (hint >= 2 ? 'Đúng cả câu, có dùng gợi ý' : 'Đúng cả câu') : 'Đúng ' + good + ' / ' + exp.length + ' chữ' + (parts.length ? ': ' + parts.join(', ') : '');
+      verdict.textContent = allOver ? 'Tính là đúng cả câu. Em đã ghi lại câu anh viết để bổ sung đáp án.' : perfect ? (hint >= 2 ? 'Đúng cả câu, có dùng gợi ý' : 'Đúng cả câu') : 'Đúng ' + good + ' / ' + exp.length + ' chữ' + (parts.length ? ': ' + parts.join(', ') : '');
       ref.textContent = ''; let j0 = 0;
-      toks.forEach(t => { const n = hanChars(t).length, ok = rs.slice(j0, j0 + n).every(r => r >= 2); j0 += n; ref.appendChild(h('span', {class:'tok ' + (ok ? 'ok' : 'bad')}, t)); });
+      toks.forEach(t => { const n = hanChars(t).length; if (!n) { ref.appendChild(h('span', {class:'punc'}, t)); return; } const ok = rs.slice(j0, j0 + n).every(r => r >= 2); j0 += n; ref.appendChild(h('span', {class:'tok ' + (ok ? 'ok' : 'bad')}, t)); });
       return {rs, perfect};
     }
     readEl.appendChild(document.createTextNode('App đọc được: '));
     readEl.appendChild(h('span', {class:'hanline', lang:'zh-Hans'}, ops.filter(o => o.i >= 0).map(o => o.st === 'ok' || o.st === 'near' ? exp[o.j] : (o.movedTo != null ? exp[o.movedTo] : (o.read || '？'))).join(' ')));
-    paint(); after.appendChild(verdict); after.appendChild(readEl);
-    const model = wordEl(hz, 56);
+    const st0 = paint(); after.appendChild(verdict); after.appendChild(readEl);
+    const readStr = ops.filter(o => o.i >= 0).map(o => o.st === 'ok' || o.st === 'near' ? exp[o.j] : (o.movedTo != null ? exp[o.movedTo] : (o.read || '？'))).join('');
+    if (!st0.perfect) after.appendChild(h('div', {class:'center'}, h('button', {type:'button', class:'btn', 'aria-pressed':'false', onclick:e => { allOver = !allOver; e.currentTarget.setAttribute('aria-pressed', String(allOver)); const m = META(), i = m.flags.findIndex(f => f.h === hz && f.alt); if (allOver && i < 0) m.flags.push({h:hz, t:dayStr(Date.now()), alt:readStr}); else if (!allOver && i >= 0) m.flags.splice(i, 1); Store.mark('meta'); paint(); }}, 'Câu tôi viết cũng đúng')));
+    const model = wordEl(hz, exp.length > 14 ? 40 : 56); model.style.flexWrap = 'wrap'; model.style.justifyContent = 'center';
     after.appendChild(h('div', {class:'info'}, h('small', {class:'fine'}, 'Câu mẫu. Từ tô xanh là từ anh viết được, tô đỏ là từ cần xem lại.'), ref, model, printRow(hz), h('div', {class:'py', text:sent.p}), h('div', {class:'mean', text:sent.m}),
       h('div', {class:'row', style:'justify-content:center'}, demoBtn(model), h('button', {type:'button', class:'btn', onclick:() => playSent(ex, 1)}, 'Nghe'), h('button', {type:'button', class:'btn', onclick:() => playSent(ex, 0.65)}, 'Nghe chậm'), flagBtn(hz)),
-      h('small', {class:'fine'}, 'Câu do Claude đặt. Nếu câu của anh cũng đúng mà app chấm sai, bấm Báo lỗi để em bổ sung đáp án.')));
+      h('small', {class:'fine'}, sent.n ? 'Câu số ' + sent.n + ' trong bài tập của thầy. Bản tiếng Trung do Claude dịch, chưa đối chiếu với đáp án của thầy.' : 'Câu do Claude đặt.')));
     const go = () => {
       const st = paint(), worst = {}; exp.forEach((ch, j) => { worst[ch] = Math.min(worst[ch] || 4, st.rs[j]); });
       const sec = (Date.now() - t0) / 1000 / Math.max(1, Object.keys(worst).length);
@@ -1168,8 +1172,8 @@ function exSent(ex, api){
   }
   KEYS = {Enter:check};
   const prompt = dict
-    ? h('div', {class:'prompt'}, h('p', {class:'ask'}, 'Nghe rồi viết lại cả câu bằng chữ Hán. Viết xong mới bấm Chấm.'), h('div', {class:'row', style:'justify-content:center'}, h('button', {type:'button', class:'listen', onclick:() => playSent(ex, 1)}, 'Nghe lại'), h('button', {type:'button', class:'btn ghost', onclick:() => playSent(ex, 0.65)}, 'Nghe chậm')))
-    : h('div', {class:'prompt'}, h('p', {class:'ask'}, 'Dịch sang tiếng Trung, viết tay cả câu. Viết xong mới bấm Chấm.'), h('div', {class:'mean big', text:sent.m}));
+    ? h('div', {class:'prompt'}, h('p', {class:'ask'}, from + 'Nghe rồi viết lại cả câu bằng chữ Hán. Viết xong mới bấm Chấm.'), h('div', {class:'row', style:'justify-content:center'}, h('button', {type:'button', class:'listen', onclick:() => playSent(ex, 1)}, 'Nghe lại'), h('button', {type:'button', class:'btn ghost', onclick:() => playSent(ex, 0.65)}, 'Nghe chậm')))
+    : h('div', {class:'prompt'}, h('p', {class:'ask'}, from + 'Dịch sang tiếng Trung, viết tay cả câu. Viết xong mới bấm Chấm.'), h('div', {class:'mean big', text:sent.m}));
   if (dict) setTimeout(() => playSent(ex, 1), 250);
   const tip = h('p', {class:'fine', style:'text-align:center'}, 'Mỗi ô một chữ. Viết tới ô cuối thì app tự thêm hàng mới. Ô bỏ trống không bị tính.'); owner.tip = tip;
   return [prompt, hintEl, grid, tip, tools, after];
@@ -1241,6 +1245,21 @@ function practicePool(src, group){
   else list = shuffle(list);
   return list;
 }
+/* bài tập dịch câu của thầy: làm theo thứ tự, chọn được câu bắt đầu */
+function teacherPanel(set){
+  const ts = SENTS.filter(x => x.n).sort((a, b) => a.n - b.n), cs = SENTS.filter(x => !x.n), rec = META().sent || {};
+  if (!ts.length) return null;
+  const done = ts.filter(x => rec[x.h] && rec[x.h][1] > 0).length, next = ts.find(x => !(rec[x.h] && rec[x.h][1] > 0)) || ts[0];
+  const from = h('input', {type:'number', id:'prFrom', class:'sel', min:ts[0].n, max:ts[ts.length - 1].n, value:next.n, inputmode:'numeric', style:'width:90px'});
+  const go = (kind, setName) => { Snd.unlock(); Session.startPractice({kinds:[kind], src:'all', group:'', mins:60, allSents:true, set:setName, from:+from.value || 1}); };
+  return h('div', {class:'tpanel'},
+    h('b', null, 'Bài tập dịch câu của thầy'),
+    h('small', {class:'fine'}, ts.length + ' câu, làm theo thứ tự. Đã viết đúng trọn ' + done + ' câu. Bản tiếng Trung do Claude dịch, chưa đối chiếu với đáp án của thầy.'),
+    h('div', {class:'row'}, h('label', {for:'prFrom', class:'muted'}, 'Bắt đầu từ câu số'), from,
+      h('button', {type:'button', class:'btn primary', id:'btnTrySent', onclick:() => go('ws', 't')}, 'Dịch, viết tay'),
+      h('button', {type:'button', class:'btn', disabled:set.quiet, onclick:() => go('wd', 't')}, 'Nghe chép, viết tay')),
+    cs.length ? h('div', {class:'row'}, h('span', {class:'muted'}, cs.length + ' câu ngắn do Claude đặt:'), h('button', {type:'button', class:'btn', id:'btnTryClaude', onclick:() => go('ws', 'c')}, 'Dịch, viết tay'), h('button', {type:'button', class:'btn', disabled:set.quiet, onclick:() => go('wd', 'c')}, 'Nghe chép, viết tay')) : null);
+}
 function viewPractice(){
   const set = SET(), saved = META().set.pr || {}, st = {kinds:new Set(saved.kinds || ['wf', 'ord']), src:saved.src || 'due', group:saved.group || '', mins:saved.mins || 10};
   const learned = items().filter(it => P('m')[it.h]).length, ready = readySents().length;
@@ -1258,7 +1277,7 @@ function viewPractice(){
     !learned ? h('div', {class:'banner'}, 'Chưa có từ nào đã học. Xếp trình độ hoặc học một phiên trước.') : null,
     h('section', {class:'panel'}, h('h2', null, 'Dạng bài'), h('div', {class:'kinds'}, kindBtns),
       h('small', {class:'fine'}, 'Câu dùng được lúc này: ' + ready + ' / ' + SENTS.length + '. Một câu mở ra khi anh đã học hết các chữ trong câu. Chưa có câu nào thì app dùng cụm từ dài trong kho từ.'),
-      h('div', {class:'row'}, h('button', {type:'button', class:'btn', id:'btnTrySent', onclick:() => { Snd.unlock(); Session.startPractice({kinds:['ws'], src:'all', group:'', mins:15, allSents:true}); }}, 'Thử viết tay với cả ' + SENTS.length + ' câu mẫu'), h('button', {type:'button', class:'btn', disabled:set.quiet, onclick:() => { Snd.unlock(); Session.startPractice({kinds:['wd'], src:'all', group:'', mins:15, allSents:true}); }}, 'Thử nghe chép với cả ' + SENTS.length + ' câu mẫu'))),
+      teacherPanel(set)),
     h('section', {class:'panel'}, h('h2', null, 'Lấy từ nào'), one(PSRC, 'src'), h('div', {class:'row'}, h('label', {for:'prGroup', class:'muted'}, 'Nhóm nghĩa'), grpSel)),
     h('section', {class:'panel'}, h('h2', null, 'Thời lượng'), one([5, 10, 20, 30, 60].map(m => [m, m + ' phút']), 'mins'),
       h('div', {class:'row'}, startBtn))
@@ -1267,7 +1286,10 @@ function viewPractice(){
 }
 function practiceGen(cfg){
   const pool = practicePool(cfg.src, cfg.group); if (!pool.length && !cfg.allSents) return () => null;
-  const sents = shuffle(cfg.allSents ? SENTS : readySents()), phrases = shuffle(pool.filter(it => it.chars.length >= 3));
+  let sents;
+  if (cfg.allSents && cfg.set === 't'){ sents = SENTS.filter(x => x.n).sort((a, b) => a.n - b.n); const i0 = Math.max(0, sents.findIndex(x => x.n >= (cfg.from || 1))); sents = sents.slice(i0).concat(sents.slice(0, i0)); } // câu của thầy: theo đúng thứ tự bài tập
+  else sents = shuffle(cfg.allSents ? SENTS.filter(x => !x.n) : readySents());
+  const phrases = shuffle(pool.filter(it => it.chars.length >= 3));
   const kinds = cfg.kinds.filter(k => !((k === 'l' || k === 'wd') && SET().quiet)); let ki = 0, pi = 0, si = 0, fi = 0, fails = 0;
   const nextItem = pred => { for (let g = 0; g < pool.length; g++){ const it = pool[pi++ % pool.length]; if (!pred || pred(it)) return it; } return null; };
   const sentOrPhrase = () => { if (sents.length) return {sent:sents[si++ % sents.length]}; if (phrases.length) return {item:phrases[fi++ % phrases.length]}; return null; };
