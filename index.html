@@ -712,7 +712,8 @@ const Snd = {
     return false;
   }
 };
-function listenable(it){ return !it.h.includes('…') && (Snd.has(it.h) || Snd.tts); }
+function listenable(it){ return !it.h.includes('…') && (Snd.has(it.h) || Snd.tts); } // dùng được cho bài nghe
+function playable(it){ return Snd.has(it.h) || Snd.tts; } // phát được tiếng (kể cả mẫu câu có chỗ trống như 不要…了)
 
 /* ================= lịch ôn FSRS ================= */
 const F = window.FSRS;
@@ -889,7 +890,7 @@ function viewPlacement(){
 
 /* ================= bài tập ================= */
 function audioBtns(it){
-  if (!listenable(it)) return null;
+  if (!playable(it)) return null;
   return h('div', {class:'row'}, h('button', {type:'button', class:'btn', onclick:() => Snd.play(it, 1)}, 'Nghe'), h('button', {type:'button', class:'btn', onclick:() => Snd.play(it, 0.65)}, 'Nghe chậm'));
 }
 function infoPanel(it){
@@ -1033,7 +1034,7 @@ function exWrite(ex, api){
   grid.innerHTML = GUIDE; const wbox = h('div', {id:'writer'}); grid.appendChild(wbox);
   ['touchstart', 'touchmove'].forEach(n => grid.addEventListener(n, e => { if (e.cancelable) e.preventDefault(); }, {passive:false}));
   const btnShow = h('button', {type:'button', class:'btn', onclick:showModel}, 'Xem chữ mẫu');
-  const tools = h('div', {class:'row', style:'justify-content:center'}, btnShow, listenable(it) ? h('button', {type:'button', class:'btn', onclick:() => Snd.play(it, 1)}, 'Nghe') : null);
+  const tools = h('div', {class:'row', style:'justify-content:center'}, btnShow, playable(it) ? h('button', {type:'button', class:'btn', onclick:() => Snd.play(it, 1)}, 'Nghe') : null);
   function fill(ch){ cellOf[ch].forEach(c => { c.textContent = ''; c.innerHTML = GUIDE; c.appendChild(hanEl(ch)); c.classList.remove('now'); }); }
   function size(){ return Math.max(220, Math.min(view().clientWidth - 8, 430, window.innerHeight - 380)); }
   async function startChar(){
@@ -1090,7 +1091,7 @@ function speak(text, rate){
   if (!Snd.tts) return;
   try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'zh-CN'; u.rate = rate || 0.85; speechSynthesis.speak(u); } catch (e) {}
 }
-function autoPlay(it){ const s = SET(); if (s.snd && !s.quiet && listenable(it)) Snd.play(it, 1); }
+function autoPlay(it){ const s = SET(); if (s.snd && !s.quiet && playable(it)) Snd.play(it, 1); }
 function logOnly(sk, ok, sec){
   const L = todayLog(), a = L.s[sk] || (L.s[sk] = [0, 0, 0, 0]);
   L.n++; if (ok) L.ok++; L.sec += Math.round(sec || 0); a[0]++; if (ok) a[1]++; Store.mark('meta');
@@ -1380,6 +1381,7 @@ function sentAlign(cells, exp, data, size, strict){
 function playSent(ex, rate){
   if (SET().quiet) return;
   if (ex.item && Snd.has(ex.item.h)) return void Snd.play(ex.item, rate || 1);
+  if (ex.hz && Snd.has(ex.hz)) return void Snd.play({h:ex.hz}, rate || 1); /* câu đã thu sẵn giọng Han */
   if (Snd.tts) return void speak((ex.sent && ex.sent.d) || ex.hz, rate && rate < 1 ? 0.55 : 0.85);
   const its = (ex.sent ? ex.sent.t : []).map(t => V.byH[t]).filter(Boolean); let k = 0; // máy không có giọng đọc: phát lần lượt âm thu sẵn của từng từ
   const step = () => { if (k >= its.length) return; Snd.play(its[k++], rate || 1).then(() => { const a = Snd.el, done = () => { a.removeEventListener('ended', done); setTimeout(step, 90); }; a.addEventListener('ended', done); }); };
