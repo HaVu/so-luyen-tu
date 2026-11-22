@@ -1841,7 +1841,11 @@ const DECO = {
 /* ---------- cài đặt âm thanh và hiệu ứng ---------- */
 function fxPanel(save){
   const s = META().set, cur = s.fx || 'full';
-  return h('section', {class:'panel'}, h('h2', null, 'Âm thanh và hiệu ứng'),
+  const th = s.theme || 'auto';
+  return h('section', {class:'panel'}, h('h2', null, 'Giao diện, âm thanh và hiệu ứng'),
+    h('div', {class:'field'}, h('span', {style:'font-weight:600'}, 'Giao diện'),
+      h('div', {class:'row'}, [['auto', 'Theo máy'], ['light', 'Sáng'], ['dark', 'Tối']].map(o => h('button', {type:'button', class:'btn', 'aria-pressed':String(th === o[0]), onclick:e => { save('theme', o[0]); applyTheme(); Array.from(e.currentTarget.parentNode.children).forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); }}, o[1]))),
+      h('small', {class:'fine'}, 'Theo máy: sáng hay tối theo cài đặt Màn hình của iPad, iPhone hoặc máy tính. Lựa chọn lưu theo tài khoản.')),
     h('label', {class:'switch', for:'setSfx'}, h('span', null, 'Âm thanh hiệu ứng: đúng, sai, đóng dấu, chạm nút. Chế độ yên lặng tắt luôn phần này.'),
       h('input', {type:'checkbox', id:'setSfx', checked:s.sfx !== false, onchange:e => { save('sfx', e.currentTarget.checked); if (e.currentTarget.checked) { FX.unlock(); FX.play('note', 0, 0.6, 0.05); } }})),
     h('div', {class:'field'}, h('span', {style:'font-weight:600'}, 'Hiệu ứng hình'),
@@ -1853,7 +1857,9 @@ function fxPanel(save){
 /* ---------- cách viết: thứ tự nét và kiểu chữ (22/11/2026, theo ý các bạn) ----------
    meta.set.ord: 'hinh' chỉ cần đúng mặt chữ, nét nào trước cũng được (mặc định từ 22/11, theo các bạn) | 'net' viết đúng thứ tự nét.
    meta.set.font: 'may' chữ máy tính, dùng phông hệ thống như trên điện thoại và web (mặc định) | 'kai' chữ khải, vẽ bằng dữ liệu nét. */
-function applyFont(){ try { document.documentElement.setAttribute('data-font', SET().font); } catch (e) {} }
+function applyFont(){ try { document.documentElement.setAttribute('data-font', SET().font); } catch (e) {} applyTheme(); }
+/* giao diện sáng tối: meta.set.theme = auto (theo máy, mặc định) | light | dark */
+function applyTheme(){ let t = 'auto'; try { t = META().set.theme || 'auto'; } catch (e) {} const r = document.documentElement; if (t === 'light' || t === 'dark') r.setAttribute('data-theme', t); else r.removeAttribute('data-theme'); }
 function writeStylePanel(set, save){
   const pick = (k, opts, cur, after) => h('div', {class:'row'}, opts.map(o => h('button', {type:'button', class:'btn', 'aria-pressed':String(cur === o[0]), onclick:e => { save(k, o[0]); Array.from(e.currentTarget.parentNode.children).forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); if (after) after(o[0]); }}, o[1])));
   return h('div', {class:'field'},
