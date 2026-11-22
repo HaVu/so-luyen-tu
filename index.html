@@ -811,9 +811,9 @@ function show(name, nodes){
   $('#navPr').setAttribute('aria-current', name === 'pr' ? 'page' : 'false');
 }
 document.addEventListener('keydown', e => { if (!KEYS || e.metaKey || e.ctrlKey || e.altKey || (e.target && e.target.tagName === 'INPUT')) return; const f = KEYS[e.key]; if (f && e.key !== '_any') { e.preventDefault(); f(); } else if (KEYS._any && KEYS._any(e.key)) e.preventDefault(); });
-$('#navHome').addEventListener('click', () => { if (Session.on) Session.finish(); else viewHome(); });
-$('#navSet').addEventListener('click', () => { if (Session.on) Session.finish(true); viewSettings(); });
-$('#navPr').addEventListener('click', () => { if (Session.on) Session.finish(true); viewPractice(); });
+$('#navHome').addEventListener('click', () => { if (!Store.docs.meta) return; if (Session.on) Session.finish(); else viewHome(); });
+$('#navSet').addEventListener('click', () => { if (!Store.docs.meta) return; if (Session.on) Session.finish(true); viewSettings(); });
+$('#navPr').addEventListener('click', () => { if (!Store.docs.meta) return; if (Session.on) Session.finish(true); viewPractice(); });
 
 /* ================= trang chính ================= */
 function viewHome(){
