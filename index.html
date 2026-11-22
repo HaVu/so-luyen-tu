@@ -120,6 +120,7 @@ table.sk td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
 .trow .tb{flex:1;display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .tb button{border:1.5px solid var(--line);background:var(--card);border-radius:10px;min-height:50px;font-size:18px;font-weight:600;padding:4px 2px}
 .tb button[aria-pressed="true"]{border-color:var(--jade);background:var(--jade-soft)}
+.tb.g3{grid-template-columns:2fr 1fr 1fr} .tb.g3 button:first-child{font-size:15px;line-height:1.25;white-space:normal}
 .tb button.right{border-color:var(--ok);background:var(--ok-bg)} .tb button.wrong{border-color:var(--bad);background:var(--bad-bg)}
 .typed{min-height:54px;min-width:220px;max-width:100%;padding:6px 14px;font-size:28px;letter-spacing:.05em;text-align:center;border-bottom:2.5px solid var(--jade);overflow-wrap:anywhere}
 .typed:empty::before{content:'gõ pinyin, chưa cần dấu thanh';color:var(--muted);font-size:17px;letter-spacing:0}
@@ -478,7 +479,7 @@ function knownCard(S, spreadDays){
   const due = Date.now() + (Math.random() * spreadDays - 1) * DAY; // khoảng một phần mười đến hạn ngay để kiểm lại
   return [Math.round(due / 60000), S, 3, 1, 0, 2, Math.round((due - S * DAY) / 60000), 2, 0, S];
 }
-function SET(){ const s = META().set; return {wr:s.wr || 25, nd:s.nd || 15, names:s.names !== false, auto:s.auto === true, snd:s.snd !== false, mins:s.mins || 15, quiet:!!s.quiet, wm:s.wm || 'mix', strict:!!s.strict}; }
+function SET(){ const s = META().set; return {wr:s.wr || 25, nd:s.nd || 15, names:s.names !== false, auto:s.auto === true, snd:s.snd !== false, mins:s.mins || 15, quiet:!!s.quiet, wm:s.wm || 'mix', strict:!!s.strict, t3:!!s.t3}; }
 function enabled(it){ return SET().names || it.g !== 'Tên riêng'; }
 function items(){ return V.items.filter(enabled); }
 function retention(sk){
@@ -682,14 +683,20 @@ function exMCQ(ex, api){
   return [prompt, body, after];
 }
 function toneRows(it, onReady){
+  /* Chế độ gộp thanh (cài đặt t3): thanh 1, thanh 4 và thanh nhẹ là một lựa chọn; thanh 2 và thanh 3 giữ riêng. */
+  const g3 = SET().t3, grp = t => (g3 && (t === 4 || t === 5)) ? 1 : t;
   const chosen = it.syl.map(() => 0), rows = [];
   const box = h('div', {class:'tones'});
   it.syl.forEach((syl, i) => {
-    const base = plain(syl), tb = h('div', {class:'tb'});
-    [1, 2, 3, 4, 5].forEach(t => tb.appendChild(h('button', {type:'button', 'aria-pressed':'false', 'aria-label':'thanh ' + (t === 5 ? 'nhẹ' : t), onclick:e => { if (box.dataset.done) return; chosen[i] = t; Array.from(tb.children).forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); onReady(chosen.every(Boolean)); }}, applyTone(base, t))));
+    const base = plain(syl), tb = h('div', {class:'tb' + (g3 ? ' g3' : '')});
+    (g3 ? [1, 2, 3] : [1, 2, 3, 4, 5]).forEach(t => {
+      const merged = g3 && t === 1;
+      const b = h('button', {type:'button', 'aria-pressed':'false', 'aria-label':merged ? 'thanh 1, thanh 4 hoặc thanh nhẹ' : 'thanh ' + (t === 5 ? 'nhẹ' : t), onclick:e => { if (box.dataset.done) return; chosen[i] = t; Array.from(tb.children).forEach(x => x.setAttribute('aria-pressed', String(x === e.currentTarget))); onReady(chosen.every(Boolean)); }}, merged ? [1, 4, 5].map(k => applyTone(base, k)).join(' · ') : applyTone(base, t));
+      b.dataset.t = t; tb.appendChild(b);
+    });
     rows.push(tb); box.appendChild(h('div', {class:'trow'}, cellEl(it.chars[i], 52), tb));
   });
-  return {el:box, check(){ box.dataset.done = '1'; let ok = true; it.syl.forEach((syl, i) => { const t = toneOf(syl); Array.from(rows[i].children).forEach((b, k) => { if (k + 1 === t) b.classList.add('right'); else if (k + 1 === chosen[i]) b.classList.add('wrong'); b.disabled = true; }); if (chosen[i] !== t) ok = false; }); return ok; }};
+  return {el:box, check(){ box.dataset.done = '1'; let ok = true; it.syl.forEach((syl, i) => { const real = toneOf(syl), t = grp(real); Array.from(rows[i].children).forEach(b => { const k = +b.dataset.t; if (k === t) { b.classList.add('right'); if (g3 && k === 1) b.textContent = syl; } else if (k === chosen[i]) b.classList.add('wrong'); b.disabled = true; }); if (chosen[i] !== t) ok = false; }); return ok; }};
 }
 function exTones(ex, api){
   const it = ex.item, after = h('div'); let tr;
@@ -1407,7 +1414,8 @@ function viewSettings(){
         h('div', {class:'row'}, [['mix', 'Bậc 1 tô từng nét, bậc 2 viết cả từ rồi chấm'], ['net', 'Luôn chấm từng nét'], ['cau', 'Luôn viết cả từ rồi chấm']].map(o => h('button', {type:'button', class:'btn', 'aria-pressed':String(set.wm === o[0]), onclick:e => { save('wm', o[0]); Array.from(e.currentTarget.parentNode.children).forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); }}, o[1])))),
       sw('setStrict', 'Chấm nét chặt theo chữ khải (mặc định chấm thoáng, nhận cả nét kiểu chữ in)', 'strict', set.strict),
       sw('setQuiet', 'Chế độ yên lặng: bỏ bài nghe, không tự phát âm', 'quiet', set.quiet),
-      sw('setSnd', 'Tự phát âm khi hiện đáp án', 'snd', set.snd), sw('setAuto', 'Tự sang thẻ kế khi trả lời đúng', 'auto', set.auto), sw('setNames', 'Học cả năm tên riêng', 'names', set.names)),
+      sw('setSnd', 'Tự phát âm khi hiện đáp án', 'snd', set.snd), sw('setAuto', 'Tự sang thẻ kế khi trả lời đúng', 'auto', set.auto), sw('setNames', 'Học cả năm tên riêng', 'names', set.names),
+      sw('setT3', 'Gộp thanh 1, thanh 4 và thanh nhẹ thành một lựa chọn trong bài pinyin (mặc định tắt: học đủ 5 thanh)', 't3', set.t3)),
     h('section', {class:'panel'}, h('h2', null, 'Dữ liệu'),
       h('p', {class:'muted'}, 'Kho từ: ' + V.items.length + ' mục (' + V.seedN + ' mục gốc, ' + V.dbN + ' mục nạp qua kho dữ liệu; kho dữ liệu: ' + V.dbState + '). Âm thanh thu sẵn: ' + Object.keys(Snd.index || {}).length + ' mục.'),
       h('p', {class:'muted'}, Store.mode === 'claude' ? 'Tiến độ lưu trên máy chủ Claude theo tài khoản của anh, đồng bộ giữa các máy.' : (Cloud.user ? 'Tiến độ lưu trên máy này và được chép lên máy chủ theo tài khoản đang đăng nhập.' : 'Tiến độ đang lưu trên máy này.')),
@@ -1438,7 +1446,7 @@ async function boot(){
     show('err', [h('h1', null, 'Chưa mở được sổ'), h('p', {class:'muted'}, 'Không đọc được dữ liệu (' + ((e && (e.code || e.message)) || 'lỗi') + '). Tiến độ của anh không bị ghi đè. Kiểm tra mạng rồi thử lại.'), h('div', {class:'row'}, h('button', {type:'button', class:'btn primary big', onclick:() => { view().textContent = ''; view().appendChild(h('p', {class:'muted', id:'bootmsg'}, 'Đang mở sổ…')); boot(); }}, 'Thử lại'))]);
   }
 }
-window.__app = {Cloud, Ink, exFree, practiceGen, readySents, SET, viewPractice, viewSettings, Store, V, Session, Strokes, Snd, segment, grade, stats, P, META, viewHome, viewPlacement, applyPlacement, items, newQueue, dueList, unplaced};
+window.__app = {exTones, Cloud, Ink, exFree, practiceGen, readySents, SET, viewPractice, viewSettings, Store, V, Session, Strokes, Snd, segment, grade, stats, P, META, viewHome, viewPlacement, applyPlacement, items, newQueue, dueList, unplaced};
 boot();
 })();
 </script>
