@@ -2150,6 +2150,8 @@ document.addEventListener('pointerdown', e => { FX.px = e.clientX; FX.py = e.cli
 /* tiếng chạm nhẹ: chỉ cho nút điều hướng và nút ngoài bài tập, để không chồng lên tiếng đúng sai */
 document.addEventListener('click', e => {
   const b = e.target && e.target.closest ? e.target.closest('button') : null; if (!b || b.disabled) return;
+  /* bàn phím pinyin: tiếng gõ nhẹ, cao độ đổi chút ít mỗi phím cho đỡ nhàm; phím Xoá trầm hơn */
+  if (b.closest('.kb')) { FX.play('tap', b.classList.contains('wide') ? -4 : [0, 2, -1, 3, 1][Math.floor(Math.random() * 5)], 0.22); return; }
   if (b.closest('#exBox') && b.id !== 'btnNext') return; if (b.closest('.top nav') || b.classList.contains('btn')) FX.play('tap', 0, 0.28);
 }, true);
 
@@ -2941,7 +2943,7 @@ async function boot(){
     show('err', [h('h1', null, 'Chưa mở được sổ'), h('p', {class:'muted'}, 'Không đọc được dữ liệu (' + ((e && (e.code || e.message)) || 'lỗi') + '). Tiến độ của anh không bị ghi đè. Kiểm tra mạng rồi thử lại.'), h('div', {class:'row'}, h('button', {type:'button', class:'btn primary big', onclick:() => { view().textContent = ''; view().appendChild(h('p', {class:'muted', id:'bootmsg'}, 'Đang mở sổ…')); boot(); }}, 'Thử lại'))]);
   }
 }
-window.__app = {Ocr, paperAlign, viewBlitz, blitzPool, Session, exOrder, exMCQ, exType, exTones, exFlip, exIntro, exWrite, show, h, sentProgress, startSent, SENTS:() => SENTS, exSent, sentAlign, exTones, Cloud, Ink, exFree, practiceGen, readySents, SET, viewPractice, viewSettings, Store, V, Session, Strokes, Snd, segment, grade, stats, P, META, viewHome, viewPlacement, viewPlaceGroups, applyPlacement, items, newQueue, dueList, unplaced};
+window.__app = {FX, Ocr, paperAlign, viewBlitz, blitzPool, Session, exOrder, exMCQ, exType, exTones, exFlip, exIntro, exWrite, show, h, sentProgress, startSent, SENTS:() => SENTS, exSent, sentAlign, exTones, Cloud, Ink, exFree, practiceGen, readySents, SET, viewPractice, viewSettings, Store, V, Session, Strokes, Snd, segment, grade, stats, P, META, viewHome, viewPlacement, viewPlaceGroups, applyPlacement, items, newQueue, dueList, unplaced};
 boot();
 })();
 </script>
