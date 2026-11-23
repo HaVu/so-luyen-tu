@@ -757,6 +757,19 @@ input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;bac
 :root[data-art]:not([data-has~="tag"]) .pill{box-shadow:inset 0 -2px 0 rgba(0,0,0,.07),inset 0 2px 0 rgba(255,255,255,.55),0 2px 3px rgba(60,35,10,.15)}
 :root[data-night] input[type=checkbox]{box-shadow:inset 0 3px 5px rgba(0,0,0,.4)}
 
+/* nút cuộn nổi khi có ô viết */
+.scrollpad{position:fixed;right:max(6px,env(safe-area-inset-right));bottom:calc(env(safe-area-inset-bottom) + 18px);z-index:50;display:flex;flex-direction:column;gap:10px}
+.scrollpad[hidden]{display:none}
+.scrollpad button{width:44px;height:44px;border-radius:50%;border:2px solid var(--line);background:var(--card);color:var(--h-ink,var(--ink));font-size:17px;line-height:1;cursor:pointer;opacity:.93;
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.08),inset 0 2px 0 rgba(255,255,255,.55),0 4px 8px rgba(60,35,10,.25);-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.scrollpad button:active{transform:translateY(2px);box-shadow:inset 0 2px 3px rgba(0,0,0,.15),0 1px 2px rgba(60,35,10,.2)}
+.scrollpad button:disabled{opacity:.35}
+:root[data-night] .scrollpad button{box-shadow:inset 0 -3px 0 rgba(0,0,0,.25),0 4px 10px rgba(0,0,0,.5)}
+.scrolltip{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 18px);z-index:49;max-width:min(70vw,420px);padding:10px 14px;border-radius:16px;
+  background:var(--card);color:var(--ink);border:2px solid var(--line);font-size:14px;line-height:1.35;text-align:center;box-shadow:0 6px 16px rgba(60,35,10,.25);animation:tipIn .3s ease-out}
+.scrolltip[hidden]{display:none}
+@keyframes tipIn{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+
 /* màn chờ khi mở app */
 #splash{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;background-color:var(--paper);background-image:var(--art-bg,none);background-size:var(--art-bgsize,auto);transition:opacity .45s ease,visibility .45s}
 #splash.out{opacity:0;visibility:hidden}
@@ -1421,10 +1434,12 @@ function exWrite(ex, api){
   const status = h('p', {class:'ask', role:'status'}), grid = h('div', {id:'grid'}), after = h('div');
   grid.innerHTML = GUIDE; const wbox = h('div', {id:'writer'}); grid.appendChild(wbox);
   ['touchstart', 'touchmove'].forEach(n => grid.addEventListener(n, e => { if (e.cancelable) e.preventDefault(); }, {passive:false}));
+  /* cuộn bằng hai ngón trên khung viết: bỏ nét dở (chỉ giữ một điểm nên thư viện tự bỏ, không tính sai nét) */
+  Pan.watch(grid, () => { try { const q = writer && writer._quiz, u = q && q._userStroke; if (u && u.points && u.points.length > 1) u.points.length = 1; } catch (x) {} });
   const btnShow = h('button', {type:'button', class:'btn', onclick:showModel}, 'Xem chữ mẫu');
   const tools = h('div', {class:'row', style:'justify-content:center'}, btnShow, playable(it) ? h('button', {type:'button', class:'btn', onclick:() => Snd.play(it, 1)}, 'Nghe') : null);
   function fill(ch){ cellOf[ch].forEach(c => { c.textContent = ''; c.innerHTML = GUIDE; c.appendChild(hanEl(ch)); c.classList.remove('now'); }); }
-  function size(){ return Math.max(220, Math.min(view().clientWidth - 8, 430, window.innerHeight - 380)); }
+  function size(){ const room = grid.isConnected && grid.parentElement && grid.parentElement.clientWidth ? grid.parentElement.clientWidth : view().clientWidth - 72; return Math.max(200, Math.min(room - 4, 430, window.innerHeight - 380)); }
   async function startChar(){
     const ch = targets[ti], lvl = (P('w')[ch] && P('w')[ch][7]) || 1; gaveUp = false; hinted = 0;
     Object.values(cellOf).forEach(a => a.forEach(c => c.classList.remove('now'))); cellOf[ch][0].classList.add('now');
@@ -1626,6 +1641,34 @@ const Ink = {
     return {ok:rating === 3, missing, extra, order, rev, joined, n:N, k:K, rating, cost:dp[K][N] / Math.max(K, N), note:parts.length ? head + '. ' + parts.join('. ') : head};
   }
 };
+/* ===== Cuộn trang khi đang ở ô viết (23/11) =====
+   Ô viết giữ chạm một ngón để viết nên trang không tự cuộn được. Ở đây:
+   - chạm HAI ngón lên ô viết rồi kéo: trang cuộn theo (nét dở của ngón đầu bị bỏ, không tính là viết sai);
+   - đang viết bằng bút (Apple Pencil) thì ngón tay một mình kéo trên ô cũng là cuộn;
+   buông tay thì trang trôi thêm một chút cho êm. */
+const Pan = {on:false, y:0, v:0, t:0, raf:0, cancels:[], pen:0,
+  sc(){ return document.querySelector('main'); },
+  avg(ts){ let y = 0; for (let i = 0; i < ts.length; i++) y += ts[i].clientY; return y / ts.length; },
+  penNow(e){ for (let i = 0; i < e.changedTouches.length; i++) if (e.changedTouches[i].touchType === 'stylus') Pan.pen = Date.now(); return (inkCell.pen && Date.now() - inkCell.pen < 12000) || (Pan.pen && Date.now() - Pan.pen < 12000); },
+  start(e){ cancelAnimationFrame(Pan.raf); Pan.on = true; Pan.y = Pan.avg(e.touches); Pan.v = 0; Pan.t = performance.now(); Pan.cancels.forEach(f => { try { f(); } catch (x) {} }); document.documentElement.classList.add('panning'); },
+  move(e){ const y = Pan.avg(e.touches), dy = Pan.y - y, now = performance.now(), sc = Pan.sc(); if (sc) sc.scrollTop += dy; const dt = Math.max(1, now - Pan.t); Pan.v = 0.8 * (dy / dt) + 0.2 * Pan.v; Pan.y = y; Pan.t = now; },
+  end(){ Pan.on = false; document.documentElement.classList.remove('panning'); let v = Pan.v * 16; const sc = Pan.sc(); if (!sc || Math.abs(v) < 1) return;
+    const step = () => { sc.scrollTop += v; v *= 0.93; if (Math.abs(v) > 0.5) Pan.raf = requestAnimationFrame(step); }; Pan.raf = requestAnimationFrame(step); },
+  /* gắn vào một vùng viết; cancel: hàm bỏ nét dở của vùng đó */
+  watch(el, cancel){
+    if (el.__pan) return; el.__pan = 1; Pan.cancels.push(cancel);
+    if (Pan.cancels.length > 40) Pan.cancels = Pan.cancels.filter(f => f.__el ? f.__el.isConnected : true).slice(-40);
+    cancel.__el = el;
+    const stop = e => { e.stopPropagation(); if (e.cancelable) e.preventDefault(); };
+    el.addEventListener('touchstart', e => {
+      if (Pan.on) { if (e.touches.length) Pan.y = Pan.avg(e.touches); return stop(e); }
+      const pen = Pan.penNow(e), finger = Array.from(e.changedTouches).every(t => t.touchType !== 'stylus');
+      if (e.touches.length >= 2 || (pen && finger)) { Pan.start(e); stop(e); }
+    }, {capture:true, passive:false});
+    el.addEventListener('touchmove', e => { if (!Pan.on) return; Pan.move(e); stop(e); }, {capture:true, passive:false});
+    const up = e => { if (!Pan.on) return; if (e.touches.length) { Pan.y = Pan.avg(e.touches); return; } Pan.end(); };
+    el.addEventListener('touchend', up, {capture:true}); el.addEventListener('touchcancel', up, {capture:true});
+  }};
 function inkCell(size, owner, lwOpt){
   const c = h('span', {class:'cell fw'}); c.style.width = size + 'px'; c.style.height = size + 'px'; c.innerHTML = GUIDE;
   const cv = document.createElement('canvas'), dpr = window.devicePixelRatio || 1; cv.width = cv.height = Math.round(size * dpr); c.appendChild(cv);
@@ -1636,9 +1679,12 @@ function inkCell(size, owner, lwOpt){
   const seg = (a, b) => { ctx.strokeStyle = ink; ctx.lineWidth = lw; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); };
   const me = {el:c, strokes, size,
     redraw(){ ctx.clearRect(0, 0, size, size); strokes.forEach(s => { dot(s[0]); for (let i = 1; i < s.length; i++) seg(s[i - 1], s[i]); }); },
-    undo(){ strokes.pop(); me.redraw(); }, clear(){ strokes.length = 0; me.redraw(); }};
-  cv.addEventListener('pointerdown', e => { if (owner.locked || pid !== null) return; if (e.pointerType === 'pen') inkCell.pen = Date.now(); else if (e.pointerType === 'touch' && inkCell.pen && Date.now() - inkCell.pen < 12000) return; /* đang viết bằng bút thì bỏ qua bàn tay tì lên màn hình */ pid = e.pointerId; try { cv.setPointerCapture(pid); } catch (x) {} cur = [pos(e)]; strokes.push(cur); dot(cur[0]); owner.last = me; if (owner.onInk) owner.onInk(me); e.preventDefault(); });
-  cv.addEventListener('pointermove', e => { if (e.pointerId !== pid || !cur) return; const q = pos(e), a = cur[cur.length - 1]; if (Math.hypot(q[0] - a[0], q[1] - a[1]) < 1.5) return; seg(a, q); cur.push(q); });
+    undo(){ strokes.pop(); me.redraw(); }, clear(){ strokes.length = 0; me.redraw(); },
+    /* đang cuộn bằng hai ngón: bỏ nét dở vừa chạm */
+    cancel(){ if (!cur) return; const i = strokes.indexOf(cur); if (i >= 0) strokes.splice(i, 1); cur = null; try { cv.releasePointerCapture(pid); } catch (x) {} pid = null; me.redraw(); }};
+  Pan.watch(c, () => me.cancel());
+  cv.addEventListener('pointerdown', e => { if (owner.locked || pid !== null || Pan.on) return; if (e.pointerType === 'pen') inkCell.pen = Date.now(); else if (e.pointerType === 'touch' && inkCell.pen && Date.now() - inkCell.pen < 12000) return; /* đang viết bằng bút thì bỏ qua bàn tay tì lên màn hình */ pid = e.pointerId; try { cv.setPointerCapture(pid); } catch (x) {} cur = [pos(e)]; strokes.push(cur); dot(cur[0]); owner.last = me; if (owner.onInk) owner.onInk(me); e.preventDefault(); });
+  cv.addEventListener('pointermove', e => { if (e.pointerId !== pid || !cur || Pan.on) return; const q = pos(e), a = cur[cur.length - 1]; if (Math.hypot(q[0] - a[0], q[1] - a[1]) < 1.5) return; seg(a, q); cur.push(q); });
   const end = e => { if (e.pointerId === pid) { pid = null; cur = null; if (owner.onEnd) owner.onEnd(me); } };
   cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
   ['touchstart', 'touchmove'].forEach(n => cv.addEventListener(n, e => { if (e.cancelable) e.preventDefault(); }, {passive:false}));
@@ -2977,6 +3023,40 @@ function xhPanelRow(save){
 function rangeFill(el){ const mn = +el.min || 0, mx = +el.max || 100; el.style.setProperty('--fill', ((+el.value - mn) / (mx - mn) * 100) + '%'); }
 document.addEventListener('input', e => { if (e.target && e.target.type === 'range') rangeFill(e.target); }, true);
 (function(){ try { new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType !== 1) return; if (n.type === 'range') rangeFill(n); n.querySelectorAll && n.querySelectorAll('input[type=range]').forEach(rangeFill); }))).observe(document.body, {childList:true, subtree:true}); } catch (e) {} })();
+
+/* ===== nút cuộn nổi khi đang có ô viết trên màn hình (23/11) =====
+   Ô viết chiếm gần hết bề ngang nên khó tìm chỗ trống để vuốt. Hai nút ▲ ▼ ở mép phải cuộn trang mà không chạm vào ô;
+   ba lần đầu thấy ô viết thì hiện một dòng mẹo: kéo bằng hai ngón trên ô viết cũng cuộn được. */
+const ScrollPad = (function(){
+  let pad = null, tip = null, tm = 0;
+  const sc = () => document.querySelector('main');
+  const go = dir => { const m = sc(); if (!m) return; m.scrollBy({top:dir * Math.round(m.clientHeight * 0.55), behavior:'smooth'}); };
+  const mk = () => {
+    pad = h('div', {class:'scrollpad', 'aria-hidden':'false', hidden:true},
+      h('button', {type:'button', class:'sp-up', 'aria-label':'Cuộn lên', onclick:() => go(-1)}, '▲'),
+      h('button', {type:'button', class:'sp-dn', 'aria-label':'Cuộn xuống', onclick:() => go(1)}, '▼'));
+    tip = h('div', {class:'scrolltip', hidden:true}, 'Mẹo: đặt hai ngón lên ô viết rồi kéo để cuộn trang, hoặc bấm ▲ ▼ bên phải.');
+    document.body.appendChild(pad); document.body.appendChild(tip);
+  };
+  const upd = () => {
+    if (!pad) mk();
+    const m = sc(), v = document.getElementById('view');
+    const has = !!(v && v.querySelector('.cell.fw, #grid'));
+    const over = m && m.scrollHeight > m.clientHeight + 24;
+    pad.hidden = !(has && over);
+    if (!pad.hidden) { pad.querySelector('.sp-up').disabled = m.scrollTop < 8; pad.querySelector('.sp-dn').disabled = m.scrollTop + m.clientHeight >= m.scrollHeight - 8; }
+    if (has && !upd.seen) { upd.seen = true; let n = 0; try { n = +localStorage.getItem('sotu:sptip') || 0; } catch (e) {}
+      if (n < 3) { try { localStorage.setItem('sotu:sptip', n + 1); } catch (e) {} tip.hidden = false; clearTimeout(tm); tm = setTimeout(() => { tip.hidden = true; }, 6000); } }
+    if (!has) upd.seen = false;
+  };
+  const kick = () => { cancelAnimationFrame(kick.r); kick.r = requestAnimationFrame(upd); };
+  try {
+    new MutationObserver(kick).observe(document.getElementById('view') || document.body, {childList:true, subtree:true});
+    window.addEventListener('resize', kick);
+    document.addEventListener('scroll', kick, true);
+  } catch (e) {}
+  return {upd:kick};
+})();
 
 
 /* ================= phiên học ================= */
