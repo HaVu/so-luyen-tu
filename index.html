@@ -2880,7 +2880,7 @@ function viewPractice(pick){
   if (!pick) {
     const pst = META().pst || {}, pool = blitzPool().length;
     const tile = sk => {
-      const r = pst[sk.id], note = sk.id === 'blitz' ? (pool ? pool + ' từ chưa học' : 'Chưa có từ mới') : r ? 'Lần trước: đúng ' + r.ok + '/' + r.n : (learned ? 'Chưa luyện lần nào' : 'Cần học vài từ trước');
+      const r = pst[sk.id], note = sk.id === 'blitz' ? (pool ? pool + ' từ chưa học' : 'Chưa có từ mới') : r ? 'Lần trước: đúng ' + r.ok + '/' + r.n : (learned ? 'Chưa luyện' : 'Cần học vài từ trước');
       return h('button', {type:'button', class:'prtile pr-' + sk.id, onclick:() => sk.id === 'blitz' ? viewBlitz() : viewPractice(sk.id)},
         prArt(sk), h('span', {class:'prname'}, sk.name), h('span', {class:'prsub'}, sk.sub), h('span', {class:'prnote'}, note));
     };
