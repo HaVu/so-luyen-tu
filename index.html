@@ -4,6 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sổ luyện từ tiếng Trung</title>
+<script>
+/* dựng đúng phong cách và sáng tối đã chọn ngay từ khung hình đầu (lưu ở applySkin), để màn chờ không hiện giao diện cũ */
+(function(){ try { var L = JSON.parse(localStorage.getItem('sotu:look') || 'null'), r = document.documentElement;
+  if (!L) L = {skin:'gom', art:'gom', has:'', night:false};
+  if (L.night == null) L.night = false;
+  var night = L.theme === 'auto' ? !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) : !!L.night;
+  r.setAttribute('data-skin', L.skin || 'gom'); r.setAttribute('data-theme', night ? 'dark' : 'light');
+  if (L.art) { r.setAttribute('data-art', L.art); if (L.has || L.nhas) r.setAttribute('data-has', night ? (L.nhas || '') : (L.has || '')); }
+  if (night) r.setAttribute('data-night', '');
+  window.__look = L; } catch (e) {} })();
+</script>
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#fbf7ee">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -689,6 +700,20 @@ html[data-art] .opt.right,html[data-art] .tb button.right,html[data-art] .tok.ri
 :root[data-art][data-night] .btn.ghost{color:var(--ink)}
 :root[data-art][data-night] .sealbig .hz svg path{fill:#e0574f;stroke:#e0574f}
 
+/* màn chờ khi mở app */
+#splash{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;background-color:var(--paper);background-image:var(--art-bg,none);background-size:var(--art-bgsize,auto);transition:opacity .45s ease,visibility .45s}
+#splash.out{opacity:0;visibility:hidden}
+#splash .sp-in{display:flex;flex-direction:column;align-items:center;gap:14px;padding:24px;text-align:center}
+#splash .sp-icon{width:112px;height:112px;border-radius:26px;box-shadow:0 10px 26px rgba(0,0,0,.25),0 2px 0 rgba(0,0,0,.08);animation:spBob 2.4s ease-in-out infinite}
+#splash .sp-t{font-size:26px;font-weight:800;color:var(--h-ink,var(--ink));letter-spacing:.01em}
+#splash .sp-m{width:120px;height:104px;object-fit:contain;margin-top:-6px}
+#splash .sp-m:not([src]){display:none}
+#splash .bar{width:200px;max-width:60vw;margin-top:4px}
+#splash .bar i{animation:spLoad 2.6s ease-in-out infinite}
+#splash #bootmsg{margin:0;color:var(--muted);font-size:15px}
+@keyframes spBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes spLoad{0%{width:12%}60%{width:78%}100%{width:92%}}
+@media (prefers-reduced-motion:reduce){#splash .sp-icon,#splash .bar i{animation:none}}
 </style>
 </head>
 <body>
@@ -701,7 +726,15 @@ html[data-art] .opt.right,html[data-art] .tb button.right,html[data-art] .tok.ri
     <button type="button" id="navSet">Cài đặt</button>
   </nav>
 </header>
-<main id="main"><div class="wrap" id="view"><p class="muted" id="bootmsg">Đang mở sổ…</p></div></main>
+<div id="splash" role="status"><div class="sp-in">
+  <img class="sp-icon" src="icon-192.png" alt="">
+  <div class="sp-t">Sổ luyện từ</div>
+  <img class="sp-m" id="spM" alt="">
+  <div class="bar brush"><i></i></div>
+  <p id="bootmsg">Đang mở sổ…</p>
+</div></div>
+<script>(function(){ try { var L = window.__look, m = document.getElementById('spM'); if (L && L.art) m.src = 'skin/' + L.art + '/m-vui.webp'; } catch (e) {} })();</script>
+<main id="main"><div class="wrap" id="view"></div></main>
 
 <script src="lib/hanzi-writer.min.js"></script>
 <script src="lib/ts-fsrs.min.js"></script>
@@ -1338,14 +1371,14 @@ function exWrite(ex, api){
     status.textContent = 'Đang tải nét…';
     const d = await Strokes.get(ch).catch(() => null);
     if (!d) { status.textContent = 'Chưa có dữ liệu nét cho chữ này, bỏ qua.'; return advance(); }
-    const total = d.strokes.length, miss = lvl === 1 ? 2 : 3; let tm = 0; btnShow.hidden = true;
+    const total = d.strokes.length, miss = ex.bw ? 3 : (lvl === 1 ? 2 : 3); let tm = 0; btnShow.hidden = true;
     writer = window.HanziWriter.create(wbox, ch, {width:px, height:px, padding:Math.round(px * 0.07), showCharacter:false, showOutline:!!ex.trace,
       strokeColor:cssVar('--ink'), outlineColor:cssVar('--outline'), drawingColor:cssVar('--jade'), highlightColor:cssVar('--seal'),
       drawingWidth:Math.max(6, Math.round(px / 40)), showHintAfterMisses:miss, highlightOnComplete:true, leniency:SET().strict ? 1 : 1.7, acceptBackwardsStrokes:!SET().strict, charDataLoader:(c, on) => on(d)});
     status.textContent = 'Viết từ trí nhớ: chữ thứ ' + (ti + 1) + '/' + targets.length + ', ' + total + ' nét';
     const t0 = Date.now();
     writer.quiz({
-      onMistake:s => { if (s.mistakesOnStroke === miss) hinted++; if (++tm >= 3) btnShow.hidden = false; status.textContent = 'Chưa đúng nét ' + (s.strokeNum + 1) + '/' + total; },
+      onMistake:s => { if (s.mistakesOnStroke === miss) hinted++; if (s.mistakesOnStroke >= 3) ex.forgot = true; if (++tm >= 3) btnShow.hidden = false; status.textContent = 'Chưa đúng nét ' + (s.strokeNum + 1) + '/' + total; },
       onCorrectStroke:s => { status.textContent = 'Nét ' + (s.strokeNum + 1) + '/' + total; },
       onComplete:sum => {
         const m = sum.totalMistakes; let rating = 3;
@@ -1360,7 +1393,7 @@ function exWrite(ex, api){
     });
   }
   function showModel(){
-    if (!writer || gaveUp) return; gaveUp = true; api.grade('w', targets[ti], 1);
+    if (!writer || gaveUp) return; gaveUp = true; ex.forgot = true; api.grade('w', targets[ti], 1);
     writer.cancelQuiz(); status.textContent = 'Xem chữ mẫu, rồi tô lại một lần';
     writer.animateCharacter({onComplete:() => { writer.hideCharacter(); writer.showOutline(); writer.quiz({showHintAfterMisses:1, onComplete:() => { fill(targets[ti]); setTimeout(advance, 500); }}); }});
   }
@@ -1590,10 +1623,10 @@ function exFree(ex, api){
       if (c.retry && !c.done && g.rating >= 2) g = Object.assign({}, g, {rating:2, note:'Viết lại đúng sau lần đầu sai'});
       res.push(g); data.push(d);
     }
-    if (tries === 1 && reveal !== true && res.some(g => g.rating === 1)){
+    if (tries < (ex.tries || 2) && reveal !== true && res.some(g => g.rating === 1)){
       cells.forEach((c, i) => { const g = res[i];
         if (g.rating >= 2) { c.done = {g, d:data[i]}; if (data[i]) resultCell(c, data[i], g); c.note.textContent = g.note; c.note.className = 'fwnote ' + (g.rating === 3 ? 'ok' : 'warn'); }
-        else { c.retry = true; c.clear(); c.note.textContent = g.empty ? 'Chưa viết' : g.note.replace(/^Chưa đúng\. ?/, 'Lần 1: ').replace(/^Chưa đúng$/, 'Lần 1 chưa đúng'); c.note.className = 'fwnote bad'; }
+        else { c.retry = true; c.clear(); c.note.textContent = g.empty ? 'Chưa viết' : g.note.replace(/^Chưa đúng\. ?/, 'Lần ' + tries + ': ').replace(/^Chưa đúng$/, 'Lần ' + tries + ' chưa đúng'); c.note.className = 'fwnote bad'; }
       });
       const nb = res.filter(g => g.rating === 1).length;
       retryBox.appendChild(h('p', {class:'verdict bad'}, nb + ' chữ chưa đúng. Viết lại ô trống rồi bấm Chấm lần nữa.'));
@@ -2345,9 +2378,9 @@ function blitzGen(cfg, S){
   let prev = null, step = 0, lastSent = 0, recent = [], sinceRv = 0, toReview = [], rvQ = [];
   const done = h => st[h].lv >= st[h].L.length;
   S.blitz = {done:0, total:words.length};
-  /* chữ viết chỉ tính là thuộc khi viết trọn: không sai, không cần gợi ý (điểm 3 trở lên) */
-  S.onResult = (ex, ok) => { if (!ex.bw) return; const w = ex.kind === 'w' || ex.kind === 'ws'; const good = w ? ok && (S.lastRating || 0) >= 3 : ok; ex.okAll = ex.okAll !== false && good; };
-  const wEx = (it, tr, rv) => { const b = {item:it, bw:it.h, rv:!!rv}; return SET().ord === 'net' ? Object.assign(b, {sk:'w', key:it.chars[0], kind:'w', chars:Array.from(new Set(it.chars)).slice(0, 4), trace:tr}) : Object.assign(b, {sk:'w', key:it.chars[0], kind:'ws', hz:it.h, trace:tr}); };
+  /* chữ viết tính là quên khi sai một nét 3 lần liền, phải xem chữ mẫu, hoặc viết cả chữ 3 lần vẫn sai; lệch vài nét vì viết nhanh thì không tính */
+  S.onResult = (ex, ok) => { if (!ex.bw) return; const w = ex.kind === 'w' || ex.kind === 'ws'; const good = !w ? ok : ex.kind === 'w' ? !ex.forgot : ok && (S.lastRating || 0) >= 2; ex.okAll = ex.okAll !== false && good; };
+  const wEx = (it, tr, rv) => { const b = {item:it, bw:it.h, rv:!!rv}; return SET().ord === 'net' ? Object.assign(b, {sk:'w', key:it.chars[0], kind:'w', chars:Array.from(new Set(it.chars)).slice(0, 4), trace:tr}) : Object.assign(b, {sk:'w', key:it.chars[0], kind:'ws', hz:it.h, trace:tr, tries:3}); };
   const mk = it => { const s = st[it.h], k = s.L[s.lv]; if (k === 'wt' || k === 'wb') return wEx(it, k === 'wt'); return {item:it, bw:it.h, sk:k[0], key:it.h, kind:k}; };
   const pickSent = () => {
     let best = null, bs = 0;
@@ -2576,6 +2609,7 @@ function applySkin(){
   r.setAttribute('data-skin', skin); const art = artNow(), night = isNight();
   if (art) { r.setAttribute('data-art', art); r.setAttribute('data-has', night ? ART[art].nhas : ART[art].has); r.setAttribute('data-theme', night ? 'dark' : 'light'); } else { r.removeAttribute('data-art'); r.removeAttribute('data-has'); }
   if (night) r.setAttribute('data-night', ''); else r.removeAttribute('data-night');
+  try { let th = 'light'; try { th = META().set.theme || 'light'; } catch (e) {} localStorage.setItem('sotu:look', JSON.stringify({skin, art, theme:th, night, has:art ? ART[art].has : '', nhas:art ? ART[art].nhas : ''})); } catch (e) {}
   document.querySelectorAll('button[data-ic]').forEach(b => b.removeAttribute('data-ic'));
   if (d) { if (decoGom == null) decoGom = d.innerHTML; const x = decoHTML(skin); d.innerHTML = x || decoGom; d.setAttribute('data-for', skin); }
   const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', (night ? {gom:'#0f1629', trasua:'#1f1628', taphoa:'#142220', diemtam:'#2a1c14'} : {gom:'#fbf7ee', trasua:'#f0d7bb', taphoa:'#c8503a', diemtam:'#9a6142'})[skin] || '#fbf7ee');
@@ -2992,6 +3026,7 @@ function viewSettings(){
 }
 
 /* ================= khởi động ================= */
+function hideSplash(){ const s = document.getElementById('splash'); if (!s || s.classList.contains('out')) return; s.classList.add('out'); setTimeout(() => s.remove(), 500); }
 async function boot(){
   const msg = t => { const e = $('#bootmsg'); if (e) e.textContent = t; };
   try {
@@ -3001,11 +3036,12 @@ async function boot(){
     Cloud.init();
     if (Cloud.on) { await Cloud.ready; if (Cloud.user) { let late = false; const job = Cloud.sync().then(() => { if (late && curView === 'home' && !Session.on) viewHome(); }); await Promise.race([job, new Promise(r => setTimeout(r, 5000))]); late = true; } }
     await loadVocab(); await loadSents();
-    paintSync(); applyFont(); viewHome();
+    paintSync(); applyFont(); viewHome(); hideSplash();
     if (Strokes.cache['家']) $('.seal').innerHTML = svgFor(Strokes.cache['家']);
     setTimeout(() => Snd.preloadAll(), 1500);
     setTimeout(() => sendDiag(), 2500);
   } catch (e) {
+    hideSplash();
     DIAG.errors.push('boot: ' + ((e && (e.code || e.message)) || e)); sendDiag({bootFailed:true});
     show('err', [h('h1', null, 'Chưa mở được sổ'), h('p', {class:'muted'}, 'Không đọc được dữ liệu (' + ((e && (e.code || e.message)) || 'lỗi') + '). Tiến độ của anh không bị ghi đè. Kiểm tra mạng rồi thử lại.'), h('div', {class:'row'}, h('button', {type:'button', class:'btn primary big', onclick:() => { view().textContent = ''; view().appendChild(h('p', {class:'muted', id:'bootmsg'}, 'Đang mở sổ…')); boot(); }}, 'Thử lại'))]);
   }
