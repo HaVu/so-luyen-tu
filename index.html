@@ -493,7 +493,7 @@ body{background-color:var(--paper);background-image:radial-gradient(ellipse at 2
 :root[data-art][data-has~="tile"] .tile{border:16px solid transparent;border-width:var(--tile-w);border-image:var(--a-tile) var(--tile-slice) fill / var(--tile-w) stretch;background:none;box-shadow:none;border-radius:0}
 /* nút: viên đất sét kéo ngang */
 :root[data-art][data-has~="btn"] .btn,:root[data-art][data-has~="btn"] .tb button,:root[data-art][data-has~="btn"] .kb button,:root[data-art][data-has~="btn"] .tok{
-  border-style:solid;border-color:transparent;border-width:0 18px;border-image:var(--a-btn) 0 54 fill / 0 18px stretch;
+  border-style:solid;border-color:transparent;border-width:0 18px;border-image:var(--a-btn) 0 var(--btn-cap,54) fill / 0 18px stretch;
   background:none;box-shadow:none;border-radius:0;padding-left:6px;padding-right:6px;color:var(--ink);text-shadow:0 1px 0 rgba(255,255,255,.6);filter:drop-shadow(0 3px 2px rgba(110,70,30,.22))}
 :root[data-art][data-has~="btn1"] .btn.primary,:root[data-art][data-has~="btn1"] .listen{border-image-source:var(--a-btn1);color:var(--btn1-ink);text-shadow:var(--btn1-sh)}
 :root[data-art][data-has~="btn2"] .btn.terra{border-image-source:var(--a-btn2);color:var(--btn2-ink);text-shadow:var(--btn2-sh)}
@@ -503,14 +503,14 @@ body{background-color:var(--paper);background-image:radial-gradient(ellipse at 2
 :root[data-art] .btn.ghost{border-image:none;border:0;filter:none;text-shadow:none}
 :root[data-art] .btn:active:not([disabled]){transform:translateY(2px);filter:drop-shadow(0 1px 1px rgba(110,70,30,.25))}
 :root[data-art] .btn[disabled]{opacity:.55;filter:grayscale(.3)}
-:root[data-art][data-has~="btn1"] .listen{border-style:solid;border-width:0 26px;border-image:var(--a-btn1) 0 54 fill / 0 26px stretch;border-radius:0;background:none;box-shadow:none;width:auto;min-width:120px;height:72px}
+:root[data-art][data-has~="btn1"] .listen{border-style:solid;border-width:0 26px;border-image:var(--a-btn1) 0 var(--btn-cap,54) fill / 0 26px stretch;border-radius:0;background:none;box-shadow:none;width:auto;min-width:120px;height:72px}
 /* đầu trang: biển gỗ, thẻ tab đất sét */
 :root[data-art] .top{background:var(--head-bg);border-bottom:4px solid var(--head-line);box-shadow:inset 0 2px 0 rgba(255,230,200,.35),0 4px 10px var(--shadow)}
 :root[data-art] .top .sync{color:var(--head-ink)}
-:root[data-art][data-has~="tab"] .top nav button{border:0 solid transparent;border-width:0 14px;border-image:var(--a-tab) 0 40 fill / 0 14px stretch;background:none;box-shadow:none;color:var(--ink);border-radius:0;padding:6px 4px}
+:root[data-art][data-has~="tab"] .top nav button{border:0 solid transparent;border-width:0 14px;border-image:var(--a-tab) 0 var(--tab-cap,40) fill / 0 14px stretch;background:none;box-shadow:none;color:var(--ink);border-radius:0;padding:6px 4px}
 :root[data-art][data-has~="tab1"] .top nav button[aria-current="page"]{border-image-source:var(--a-tab1);color:var(--tab1-ink);text-shadow:var(--tab1-sh)}
 /* lựa chọn trắc nghiệm */
-:root[data-art][data-has~="btn"] .opt{border-style:solid;border-color:transparent;border-width:0 20px;border-image:var(--a-btn) 0 54 fill / 0 20px stretch;background:none;box-shadow:none;border-radius:0;filter:drop-shadow(0 3px 2px rgba(110,70,30,.2))}
+:root[data-art][data-has~="btn"] .opt{border-style:solid;border-color:transparent;border-width:0 20px;border-image:var(--a-btn) 0 var(--btn-cap,54) fill / 0 20px stretch;background:none;box-shadow:none;border-radius:0;filter:drop-shadow(0 3px 2px rgba(110,70,30,.2))}
 :root[data-art][data-has~="btn1"] .opt.right{border-image-source:var(--a-btn1);color:var(--btn1-ink);text-shadow:var(--btn1-sh)}
 :root[data-art][data-has~="btn2"] .opt.wrong{border-image-source:var(--a-btn2);color:var(--btn2-ink);text-shadow:var(--btn2-sh)}
 /* ô viết: miếng đất sét kẻ ô điền */
@@ -660,6 +660,34 @@ html[data-art] .opt.right,html[data-art] .tb button.right,html[data-art] .tok.ri
   .row.modes{flex-wrap:wrap}
 }
 @media (max-width:340px){.top nav button{font-size:13px;padding-left:6px;padding-right:6px}.top{gap:4px}}
+
+/* ===== ban đêm cho bốn phong cách dựng bằng ảnh (data-night do applySkin đặt): ảnh n-*, nền tối, bảng màu tối ===== */
+:root[data-art="diemtam"][data-night]{--a-card:url(skin/diemtam/n-card.webp); --a-hero:url(skin/diemtam/n-hero.webp); --a-btn:url(skin/diemtam/n-btn.webp); --a-btn1:url(skin/diemtam/n-btn1.webp); --a-btn2:url(skin/diemtam/n-btn2.webp); --a-btn3:url(skin/diemtam/n-btn3.webp); --a-tab:url(skin/diemtam/n-tab.webp); --a-tab1:url(skin/diemtam/n-tab1.webp); --a-bar:url(skin/diemtam/n-bar.webp); --a-head:url(skin/diemtam/n-head.webp); --a-tile:url(skin/diemtam/n-tile.webp); --a-cell:url(skin/diemtam/n-cell.webp); --art-bg:url(skin/diemtam/n-bg.webp); --art-bgsize:300px;
+  --card-slice:40; --hero-slice:40; --hero-w:24px; --hero-wm:20px; --tile-slice:40; --tile-w:14px; --btn-cap:38; --tab-cap:38; --bar-cap:40;
+  --paper:#2a1c14; --card:#3a271c; --card2:#33231a; --ink:#f4e6d2; --muted:#c8ad92; --line:#5a4030; --line2:#7a5638; --outline:#4a3426; --well:#2f2018; --grid:#6b4a36;
+  --h-ink:#f6dcb8; --head-bg:#3a2418; --head-ink:#f6dcb8; --btn3-ink:#2a1a08; --tab1-ink:#fff; --tab1-sh:0 1px 2px rgba(0,0,0,.5); --bar-bg:#3a271c;
+  --ok:#8fd07a; --ok-bg:#1f3a22; --bad:#ff8a78; --bad-bg:#4a1f1a; --warn:#f3c35a; --warn-bg:#3d2f12; --shadow:rgba(0,0,0,.5); --fx1:#f3c35a; --jade-soft:#33231a}
+:root[data-art="trasua"][data-night]{--a-card:url(skin/trasua/n-card.webp); --a-hero:url(skin/trasua/n-hero.webp); --a-btn:url(skin/trasua/n-btn.webp); --a-btn1:url(skin/trasua/n-btn1.webp); --a-btn2:url(skin/trasua/n-btn2.webp); --a-btn3:url(skin/trasua/n-btn3.webp); --a-tab:url(skin/trasua/n-tab.webp); --a-tab1:url(skin/trasua/n-tab1.webp); --a-bar:url(skin/trasua/n-bar.webp); --a-head:url(skin/trasua/n-head.webp); --a-tile:url(skin/trasua/n-tile.webp); --art-bg:url(skin/trasua/n-bg.webp); --art-bgsize:300px;
+  --card-slice:40; --hero-slice:40; --hero-w:24px; --hero-wm:20px; --tile-slice:40; --tile-w:14px; --btn-cap:50; --tab-cap:50; --bar-cap:40;
+  --paper:#1f1628; --card:#2c2036; --card2:#271c31; --ink:#f3e8f7; --muted:#c3aecd; --line:#4a3858; --line2:#6c5480; --outline:#3a2c46; --well:#261b30; --grid:#6c4f76;
+  --h-ink:#f1d7f5; --head-bg:#5a3a2c; --head-ink:#f1d7f5; --btn3-ink:#4a3a08; --tab1-ink:#fff; --tab1-sh:0 1px 2px rgba(0,0,0,.5); --bar-bg:#2c2036;
+  --ok:#8fd07a; --ok-bg:#1f3a22; --bad:#ff8a78; --bad-bg:#4a1f1a; --warn:#f3c35a; --warn-bg:#3d2f12; --shadow:rgba(0,0,0,.5); --fx1:#f3c35a; --jade-soft:#271c31}
+:root[data-art="gom"][data-night]{--a-card:url(skin/gom/n-card.webp); --a-hero:url(skin/gom/n-hero.webp); --a-btn:url(skin/gom/n-btn.webp); --a-btn1:url(skin/gom/n-btn1.webp); --a-btn2:url(skin/gom/n-btn2.webp); --a-btn3:url(skin/gom/n-btn3.webp); --a-tab:url(skin/gom/n-tab.webp); --a-tab1:url(skin/gom/n-tab1.webp); --a-bar:url(skin/gom/n-bar.webp); --a-head:url(skin/gom/n-head.webp); --a-tile:url(skin/gom/n-tile.webp); --art-bg:url(skin/gom/n-bg.webp); --art-bgsize:300px;
+  --card-slice:56; --hero-slice:56; --hero-w:24px; --hero-wm:20px; --tile-slice:56; --tile-w:14px; --btn-cap:56; --tab-cap:56; --bar-cap:40;
+  --paper:#0f1629; --card:#16203a; --card2:#131c33; --ink:#e6ecf8; --muted:#a9b6d0; --line:#2b3a5e; --line2:#3d5287; --outline:#22305a; --well:#121a30; --grid:#3d5287;
+  --h-ink:#e8eefc; --head-bg:#14204a; --head-ink:#e8eefc; --btn3-ink:#10302a; --tab1-ink:#fff; --tab1-sh:0 1px 2px rgba(0,0,0,.5); --bar-bg:#16203a;
+  --ok:#8fd07a; --ok-bg:#1f3a22; --bad:#ff8a78; --bad-bg:#4a1f1a; --warn:#f3c35a; --warn-bg:#3d2f12; --shadow:rgba(0,0,0,.5); --fx1:#f3c35a; --jade-soft:#131c33}
+:root[data-art="taphoa"][data-night]{--a-card:url(skin/taphoa/n-card.webp); --a-hero:url(skin/taphoa/n-hero.webp); --a-btn:url(skin/taphoa/n-btn.webp); --a-btn1:url(skin/taphoa/n-btn1.webp); --a-btn2:url(skin/taphoa/n-btn2.webp); --a-btn3:url(skin/taphoa/n-btn3.webp); --a-tab:url(skin/taphoa/n-tab.webp); --a-tab1:url(skin/taphoa/n-tab1.webp); --a-bar:url(skin/taphoa/n-bar.webp); --a-head:url(skin/taphoa/n-head.webp); --a-tile:url(skin/taphoa/n-tile.webp); --art-bg:url(skin/taphoa/n-bg.webp); --art-bgsize:300px;
+  --card-slice:36; --hero-slice:36; --hero-w:24px; --hero-wm:20px; --tile-slice:36; --tile-w:14px; --btn-cap:38; --tab-cap:38; --bar-cap:40;
+  --paper:#142220; --card:#1d2c29; --card2:#192724; --ink:#f1ead8; --muted:#b8b09c; --line:#34504a; --line2:#2f7f74; --outline:#2a403c; --well:#182623; --grid:#4a6a63;
+  --h-ink:#f6dcb0; --head-bg:#5a1f16; --head-ink:#f6dcb0; --btn3-ink:#3a2a08; --tab1-ink:#fff; --tab1-sh:0 1px 2px rgba(0,0,0,.5); --bar-bg:#1d2c29;
+  --ok:#8fd07a; --ok-bg:#1f3a22; --bad:#ff8a78; --bad-bg:#4a1f1a; --warn:#f3c35a; --warn-bg:#3d2f12; --shadow:rgba(0,0,0,.5); --fx1:#f3c35a; --jade-soft:#192724}
+:root[data-art][data-night] .deco>div{opacity:.85}
+:root[data-art][data-night] .hero .dueline,:root[data-art][data-night] .hero .fine,:root[data-art][data-night] .hero h1{color:var(--h-ink)}
+:root[data-art][data-night] .btn,:root[data-art][data-night] .opt,:root[data-art][data-night] .tb button,:root[data-art][data-night] .kb button,:root[data-art][data-night] .tok{text-shadow:0 1px 1px rgba(0,0,0,.4)}
+:root[data-art][data-night] .btn[aria-pressed="true"],:root[data-art][data-night] .tb button[aria-pressed="true"]{color:var(--btn3-ink);text-shadow:none}
+:root[data-art][data-night] .btn.ghost{color:var(--ink)}
+:root[data-art][data-night] .sealbig .hz svg path{fill:#e0574f;stroke:#e0574f}
 
 </style>
 </head>
@@ -1535,9 +1563,11 @@ function exFree(ex, api){
   const size = 240, pxFor = m => m === 's' ? Math.min(autoPx, 96) : m === 'l' ? Math.min(Wd, 260) : m === 'xl' ? Math.min(Wd, 380) : autoPx;
   let fz = META().set.wfz || 'm';
   const owner = {locked:false, last:null}, cells = [], row = h('div', {class:'word', lang:'zh-Hans'});
-  const applyFz = () => { const room = row.clientWidth || Wd, fit = Math.floor((room - (n - 1) * 8) / Math.max(1, n));
-    /* Lớn, Rất lớn: cả từ vừa một hàng nếu ô còn đủ to, không thì mỗi ô chiếm trọn bề ngang và xuống hàng */
-    const px = Math.min(room, fz === 'l' ? (fit >= 150 ? Math.min(260, fit) : Math.min(260, room)) : fz === 'xl' ? (fit >= 220 ? Math.min(380, fit) : Math.min(380, room)) : pxFor(fz)); cells.forEach(c => { c.el.style.width = px + 'px'; c.el.style.height = px + 'px'; if (c.tr) c.tr.style.fontSize = Math.round(px * 0.8) + 'px'; }); Array.from(fzBar.querySelectorAll('button')).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === fz))); };
+  const applyFz = () => { const room = row.clientWidth || Wd;
+    /* bốn cỡ luôn khác nhau rõ: Lớn to hơn Vừa ít nhất 1/3, Rất lớn to hơn Lớn ít nhất 1/3; không đủ chỗ một hàng thì ô xuống hàng */
+    const fitRow = Math.floor((room - (n - 1) * 8) / Math.max(1, n)), m = Math.min(autoPx, Math.max(96, fitRow)), l = Math.min(280, Math.max(Math.round(m * 1.35), 200)), xl = Math.min(420, Math.max(Math.round(l * 1.35), 300));
+    const px = Math.min(room, fz === 's' ? Math.min(m, 96) : fz === 'l' ? l : fz === 'xl' ? xl : m);
+    cells.forEach(c => { c.el.style.width = px + 'px'; c.el.style.height = px + 'px'; if (c.tr) c.tr.style.fontSize = Math.round(px * 0.8) + 'px'; }); Array.from(fzBar.querySelectorAll('button')).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === fz))); };
   const fzBar = h('div', {class:'row modes', style:'justify-content:center'}, h('span', {class:'muted'}, 'Cỡ ô:'), [['s', 'Nhỏ'], ['m', 'Vừa'], ['l', 'Lớn'], ['xl', 'Rất lớn']].map(o => h('button', {type:'button', class:'btn small', 'data-m':o[0], onclick:() => { fz = o[0]; META().set.wfz = fz; Store.mark('meta'); applyFz(); }}, o[1])));
   chars.forEach(c => { if (isHan(c)) { const cell = inkCell(size, owner); cell.ch = c; cells.push(cell); if (ex.trace) cell.el.insertBefore(cell.tr = h('span', {class:'trace', 'aria-hidden':'true'}, c), cell.el.querySelector('canvas')); row.appendChild(h('span', {class:'fwcol'}, cell.el, cell.note = h('span', {class:'fwnote'}))); } else if (c.trim()) row.appendChild(h('span', {class:'gap', text:c})); });
   const py = sent ? sent.p : it.p, mean = sent ? sent.m : it.m, after = h('div');
@@ -2224,7 +2254,7 @@ function fxPanel(save){
   return h('section', {class:'panel'}, h('h2', null, 'Giao diện, âm thanh và hiệu ứng'),
     skinPanelRow(save),
     h('div', {class:'field'}, h('span', {style:'font-weight:600'}, 'Giao diện'),
-      h('div', {class:'row'}, [['auto', 'Theo máy'], ['light', 'Sáng'], ['dark', 'Tối']].map(o => h('button', {type:'button', class:'btn', disabled:skinNow() !== 'gom' && o[0] !== 'light', 'aria-pressed':String(skinNow() !== 'gom' ? o[0] === 'light' : th === o[0]), onclick:e => { save('theme', o[0]); applyTheme(); Array.from(e.currentTarget.parentNode.children).forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); }}, o[1]))),
+      h('div', {class:'row'}, [['auto', 'Theo máy'], ['light', 'Sáng'], ['dark', 'Tối']].map(o => h('button', {type:'button', class:'btn', 'aria-pressed':String(th === o[0]), onclick:e => { save('theme', o[0]); applyTheme(); Array.from(e.currentTarget.parentNode.children).forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); }}, o[1]))),
       h('small', {class:'fine'}, 'Theo máy: sáng hay tối theo cài đặt Màn hình của iPad, iPhone hoặc máy tính. Lựa chọn lưu theo tài khoản.')),
     h('label', {class:'switch', for:'setSfx'}, h('span', null, 'Âm thanh hiệu ứng: đúng, sai, đóng dấu, chạm nút. Chế độ yên lặng tắt luôn phần này.'),
       h('input', {type:'checkbox', id:'setSfx', checked:s.sfx !== false, onchange:e => { save('sfx', e.currentTarget.checked); if (e.currentTarget.checked) { FX.unlock(); FX.play('note', 0, 0.6, 0.05); } }})),
@@ -2469,12 +2499,16 @@ function nhacPanel(){
 const SKINS = [['gom', 'Gốm làng', '#2c579f'], ['diemtam', 'Tiệm điểm tâm', '#e3bd83'], ['trasua', 'Tiệm trà sữa', '#86c9ee'], ['taphoa', 'Tạp hoá xưa', '#c8503a']];
 /* phong cách dựng bằng ảnh: hình dán mép trang (s1, s2 hai góc trên; s3, s4 hai góc dưới; s5 đến s9 rải hai bên) */
 const ART = {
-  diemtam:{has:'bar bar1 btn btn1 btn2 btn3 card cell head hero seal sealbg stk1 stk2 tab tab1 ic reo tile', deco:['d4', 'd4', 'm-vui', 'd5', 'd7', 'd3', 'd2', 'd1', 'd8']},
-  trasua:{has:'bar bar1 bg btn btn1 btn2 btn3 card cell day head hero seal sealbg stk1 stk2 tab tab1 tag tile ic reo', deco:['d4', 'd2', 'm-vui', 'd1', 'd3', 'd5', 'd6', 'd8', 'd7']},
-  gom:{has:'bar bar1 btn btn1 btn2 btn3 card cell day head hero plate seal sealbg stk1 stk2 tab tab1 tag tile ic reo', deco:['d2', 'd6', 'm-ngu', 'd3', 'd5', 'd4', 'd7', 'd8', 'd10']},
-  taphoa:{has:'bar bar1 btn btn1 btn2 btn3 card head hero stk1 stk2 tile ic reo', deco:['d3', 'd4', 'm-vui', 'd10', 'd8', 'd2', 'd5', 'd9', 'd7']}
+  diemtam:{has:'bar bar1 btn btn1 btn2 btn3 card cell head hero seal sealbg stk1 stk2 tab tab1 ic reo tile', nhas:'bar bar1 btn btn1 btn2 btn3 card cell head hero ic reo seal sealbg stk1 stk2 tab tab1 tile', deco:['d4', 'd4', 'm-vui', 'd5', 'd7', 'd3', 'd2', 'd1', 'd8']},
+  trasua:{has:'bar bar1 bg btn btn1 btn2 btn3 card cell day head hero seal sealbg stk1 stk2 tab tab1 tag tile ic reo', nhas:'bar bar1 btn btn1 btn2 btn3 card head hero ic reo seal sealbg stk1 stk2 tab tab1 tile', deco:['d4', 'd2', 'm-vui', 'd1', 'd3', 'd5', 'd6', 'd8', 'd7']},
+  gom:{has:'bar bar1 btn btn1 btn2 btn3 card cell day head hero plate seal sealbg stk1 stk2 tab tab1 tag tile ic reo', nhas:'bar bar1 btn btn1 btn2 btn3 card head hero ic reo seal sealbg stk1 stk2 tab tab1 tile', deco:['d2', 'd6', 'm-ngu', 'd3', 'd5', 'd4', 'd7', 'd8', 'd10']},
+  taphoa:{has:'bar bar1 btn btn1 btn2 btn3 card head hero stk1 stk2 tile ic reo', nhas:'bar bar1 btn btn1 btn2 btn3 card head hero ic reo stk1 stk2 tab tab1 tile', deco:['d3', 'd4', 'm-vui', 'd10', 'd8', 'd2', 'd5', 'd9', 'd7']}
 };
-function artNow(){ const sk = skinNow(); if (!ART[sk] || ART[sk].off) return null; if (sk === 'gom') { let t = 'light'; try { t = META().set.theme || 'light'; } catch (e) {} if (t !== 'light') return null; } return sk; }
+function artNow(){ const sk = skinNow(); if (!ART[sk] || ART[sk].off) return null; return sk; }
+/* ban đêm: chọn Tối, hoặc Theo máy khi máy đang tối */
+const darkMQ = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null;
+function isNight(){ let t = 'light'; try { t = META().set.theme || 'light'; } catch (e) {} return t === 'dark' || (t === 'auto' && !!darkMQ && darkMQ.matches); }
+try { darkMQ && darkMQ.addEventListener('change', () => { try { applySkin(); } catch (e) {} }); } catch (e) {}
 function skinNow(){ try { return META().set.skin || 'gom'; } catch (e) { return 'gom'; } }
 const MASCOT = {
   hamster:'<svg viewBox="0 0 150 104"><ellipse cx="78" cy="98" rx="52" ry="5" fill="rgba(90,60,60,.15)"/>'
@@ -2526,11 +2560,12 @@ function decoHTML(skin){
 let decoGom = null;
 function applySkin(){
   const skin = skinNow(), r = document.documentElement, d = document.querySelector('.deco');
-  r.setAttribute('data-skin', skin); const art = artNow(); if (art) { r.setAttribute('data-art', art); r.setAttribute('data-has', ART[art].has); } else { r.removeAttribute('data-art'); r.removeAttribute('data-has'); }
-  if (skin !== 'gom') r.setAttribute('data-theme', 'light');
+  r.setAttribute('data-skin', skin); const art = artNow(), night = isNight();
+  if (art) { r.setAttribute('data-art', art); r.setAttribute('data-has', night ? ART[art].nhas : ART[art].has); r.setAttribute('data-theme', night ? 'dark' : 'light'); } else { r.removeAttribute('data-art'); r.removeAttribute('data-has'); }
+  if (night) r.setAttribute('data-night', ''); else r.removeAttribute('data-night');
   document.querySelectorAll('button[data-ic]').forEach(b => b.removeAttribute('data-ic'));
   if (d) { if (decoGom == null) decoGom = d.innerHTML; const x = decoHTML(skin); d.innerHTML = x || decoGom; d.setAttribute('data-for', skin); }
-  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', {gom:'#fbf7ee', trasua:'#f0d7bb', taphoa:'#c8503a', diemtam:'#9a6142'}[skin] || '#fbf7ee');
+  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', (night ? {gom:'#0f1629', trasua:'#1f1628', taphoa:'#142220', diemtam:'#2a1c14'} : {gom:'#fbf7ee', trasua:'#f0d7bb', taphoa:'#c8503a', diemtam:'#9a6142'})[skin] || '#fbf7ee');
   /* hình dán cho thẻ chính và màn xong buổi */
   const uri = s => 'url("data:image/svg+xml,' + encodeURIComponent(s) + '")';
   if (skin === 'diemtam') { r.style.setProperty('--stk1', uri(FOOD.steamer)); r.style.setProperty('--stk2', uri(FOOD.siumai)); r.style.setProperty('--stk3', uri(FOOD.hagow)); r.style.setProperty('--stk4', uri(FOOD.tart)); }
@@ -2540,7 +2575,7 @@ function skinPanelRow(save){
   return h('div', {class:'field'}, h('span', {style:'font-weight:600'}, 'Phong cách'),
     h('div', {class:'row skins'}, SKINS.map(o => h('button', {type:'button', class:'btn skinbtn', 'aria-pressed':String(cur === o[0]), onclick:() => { save('skin', o[0]); applyTheme(); viewSettings(); }},
       h('i', {class:'sw', style:'background:' + o[2]}), o[1]))),
-    h('small', {class:'fine'}, cur === 'gom' ? 'Mỗi người chọn phong cách mình thích, lưu theo tài khoản.' : 'Phong cách này chỉ có bản sáng. Chọn Gốm làng để dùng giao diện tối.'));
+    h('small', {class:'fine'}, 'Mỗi người chọn phong cách mình thích, lưu theo tài khoản. Cả bốn phong cách đều có bản sáng và bản tối (chọn ở dòng Giao diện).'));
 }
 
 /* ================= đọc chữ viết tay từ ảnh chụp (PP-OCRv3 chạy ngay trên máy bằng onnxruntime-web) =================
@@ -2723,7 +2758,7 @@ MASCOT.bao = FOOD.bao(true, true);
 const SKIN_IC = [[/^Nghe( lại)?$/, 'loa'], [/^Nghe chậm$/, 'ocsen'], [/^Gợi ý/, 'denbong'], [/^(Xoá|Bỏ nét)/, 'tay'], [/(Chụp|chụp chấm)/, 'mayanh'], [/thứ tự nét/, 'but'], [/^Bắt đầu học$/, 'sao'], [/^(Cấp tốc|Bắt đầu cấp tốc)$/, 'lua'], [/^Chấm$|^Chốt điểm$/, 'dung'], [/^Hôm nay$/, 'nha'], [/^Luyện tập$/, 'sach'], [/^Cài đặt$/, 'banhrang'], [/^Tiếp$|^Đã xem, tiếp$/, 'tim']];
 function skinIcons(root){
   const art = artNow(); if (!art || ART[art].has.split(' ').indexOf('ic') < 0) return;
-  (root || document).querySelectorAll('button:not([data-ic])').forEach(b => {
+  (root || document).querySelectorAll('button:not([data-ic]):not(.opt):not(.tok)').forEach(b => {
     const t = (b.textContent || '').trim(); b.setAttribute('data-ic', '');
     const m = SKIN_IC.find(x => x[0].test(t)); if (!m) return;
     b.setAttribute('data-ic', m[1]); b.style.setProperty('--ic', 'url(skin/' + art + '/ic-' + m[1] + '.webp)');
