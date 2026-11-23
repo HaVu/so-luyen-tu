@@ -2122,7 +2122,7 @@ const FX = {
   level(){ const v = this.set().fx || 'full'; if (v === 'full' && window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return 'light'; return v; },
   ctx(){
     if (!this.ac){ const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; try { this.ac = new C(); this.out = this.ac.createGain(); this.out.gain.value = 0.55; this.out.connect(this.ac.destination); } catch (e) { this.ac = null; return null; } }
-    if (this.ac.state === 'suspended') { try { const p = this.ac.resume(); if (p && p.catch) p.catch(() => {}); } catch (e) {} }
+    if (this.ac.state !== 'running') { try { const p = this.ac.resume(); if (p && p.catch) p.catch(() => {}); } catch (e) {} }
     return this.ac;
   },
   buf(id){
@@ -2130,7 +2130,15 @@ const FX = {
       .then(a => new Promise((res, rej) => this.ac.decodeAudioData(a, res, rej))).catch(() => { delete this.bufs[id]; return null; });
     return this.bufs[id];
   },
-  unlock(){ if (this.sndOn() && this.ctx()) Object.values(SFXF).forEach(id => this.buf(id)); },
+  unlock(){ if (!this.sndOn()) return; FX.mediaMode(); if (this.ctx()) Object.values(SFXF).forEach(id => this.buf(id)); },
+  /* iPhone, iPad: Web Audio mặc định câm theo nút gạt im lặng. Báo cho máy đây là phát nội dung (playback) để vẫn kêu khi máy để im lặng;
+     máy cũ chưa có audioSession thì phát kèm một đoạn âm câm lặp lại để chuyển sang kênh phát nội dung. Nút tắt âm trong Cài đặt vẫn tắt được. */
+  mediaMode(){
+    try { if (navigator.audioSession) { if (navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; return; } } catch (e) {}
+    try { if (!this.keep) { const a = this.keep = document.createElement('audio'); a.setAttribute('x-webkit-airplay', 'deny'); a.loop = true; a.preload = 'auto';
+        a.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA'; }
+      if (this.keep.paused) { const p = this.keep.play(); if (p && p.catch) p.catch(() => {}); } } catch (e) {}
+  },
   play(role, semis, gain, delay){
     if (!this.sndOn()) return; const ac = this.ctx(); if (!ac) return;
     this.buf(SFXF[role]).then(b => { if (!b) return; try { const s = ac.createBufferSource(), g = ac.createGain(); s.buffer = b; s.playbackRate.value = Math.pow(2, (semis || 0) / 12); g.gain.value = gain == null ? 0.6 : gain; s.connect(g); g.connect(this.out); s.start(ac.currentTime + (delay || 0)); } catch (e) {} });
@@ -2177,6 +2185,10 @@ const FX = {
   demo(){ [0, 2, 4, 7].forEach((s, i) => this.play('note', s, 0.6, i * 0.32)); this.play('wrong', 0, 0.5, 1.5); this.play('stamp', 0, 0.7, 2.2); this.play('done', 0, 0.45, 2.65); }
 };
 document.addEventListener('pointerdown', e => { FX.px = e.clientX; FX.py = e.clientY; if (FX.sndOn()) FX.unlock(); }, {passive:true, capture:true});
+/* quay lại app sau khi chuyển sang app khác: máy treo bộ phát âm, đánh thức lại ở lần chạm kế tiếp và ngay khi app hiện lại */
+document.addEventListener('touchend', () => { if (FX.sndOn()) FX.unlock(); }, {passive:true, capture:true});
+document.addEventListener('visibilitychange', () => { if (document.visibilityState !== 'visible') { try { if (FX.keep) FX.keep.pause(); } catch (e) {} return; } try { if (FX.ac && FX.ac.state === 'closed') { FX.ac = null; FX.bufs = {}; } if (FX.sndOn()) { FX.mediaMode(); FX.ctx(); } } catch (e) {} });
+window.addEventListener('pageshow', () => { try { if (FX.ac && FX.ac.state !== 'running') FX.ctx(); } catch (e) {} });
 /* tiếng chạm nhẹ: chỉ cho nút điều hướng và nút ngoài bài tập, để không chồng lên tiếng đúng sai */
 document.addEventListener('click', e => {
   const b = e.target && e.target.closest ? e.target.closest('button') : null; if (!b || b.disabled) return;
@@ -2257,7 +2269,7 @@ function fxPanel(save){
       h('div', {class:'row'}, [['auto', 'Theo máy'], ['light', 'Sáng'], ['dark', 'Tối']].map(o => h('button', {type:'button', class:'btn', 'aria-pressed':String(th === o[0]), onclick:e => { save('theme', o[0]); applyTheme(); Array.from(e.currentTarget.parentNode.children).forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); }}, o[1]))),
       h('small', {class:'fine'}, 'Theo máy: sáng hay tối theo cài đặt Màn hình của iPad, iPhone hoặc máy tính. Lựa chọn lưu theo tài khoản.')),
     h('label', {class:'switch', for:'setSfx'}, h('span', null, 'Âm thanh hiệu ứng: đúng, sai, đóng dấu, chạm nút. Chế độ yên lặng tắt luôn phần này.'),
-      h('input', {type:'checkbox', id:'setSfx', checked:s.sfx !== false, onchange:e => { save('sfx', e.currentTarget.checked); if (e.currentTarget.checked) { FX.unlock(); FX.play('note', 0, 0.6, 0.05); } }})),
+      h('input', {type:'checkbox', id:'setSfx', checked:s.sfx !== false, onchange:e => { save('sfx', e.currentTarget.checked); if (!e.currentTarget.checked) { try { if (FX.keep) FX.keep.pause(); } catch (x) {} } if (e.currentTarget.checked) { FX.unlock(); FX.play('note', 0, 0.6, 0.05); } }})),
     h('div', {class:'field'}, h('span', {style:'font-weight:600'}, 'Hiệu ứng hình'),
       h('div', {class:'row'}, [['full', 'Đầy đủ'], ['light', 'Nhẹ'], ['off', 'Tắt']].map(o => h('button', {type:'button', class:'btn', 'aria-pressed':String(cur === o[0]), onclick:e => { save('fx', o[0]); Array.from(e.currentTarget.parentNode.children).forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); }}, o[1]))),
       h('small', {class:'fine'}, 'Đầy đủ: giọt mực bắn ra khi đúng, thẻ lắc nhẹ khi sai, con dấu rơi xuống khi xong buổi. Nhẹ: chỉ đổi màu viền. Máy bật giảm chuyển động thì app tự dùng mức nhẹ.')),
