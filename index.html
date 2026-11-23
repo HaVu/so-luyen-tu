@@ -2509,7 +2509,8 @@ function viewBlitz(pre){
     h('option', {value:'all', selected:st.src === 'all'}, 'Mọi từ chưa học (' + pool.length + ')'),
     groups.map(g => h('option', {value:'g:' + g, selected:st.src === 'g:' + g}, 'Nhóm ' + g + ' (' + pool.filter(it => groupOf(it) === g).length + ')')));
   show('pr', [
-    h('h1', null, 'Cấp tốc từ mới'),
+    h('div', {class:'prhead pr-blitz'}, prArt(PR_SK[0]), h('div', null, h('h1', null, 'Cấp tốc từ mới')),
+      h('button', {type:'button', class:'btn small', onclick:() => viewPractice()}, 'Đổi kỹ năng')),
     h('p', {class:'muted'}, 'Dồn sức học một lô từ mới cho thật nhanh thuộc. Học từng từ như chép vở: tô theo chữ mờ, rồi viết lại không nhìn mẫu. Còn sai hay quên nét thì viết lại ngay (không còn chữ mờ, tự nhớ ra chữ), viết trọn mới sang từ kế. Cứ xong 3 từ thì ôn viết lại các từ vừa học. Viết xong cả đợt mới sang đố nghĩa, nghe và pinyin. Đang bật Viết đúng thứ tự nét thì app chấm từng nét, không thì chấm cả chữ. Xen giữa là các câu chứa nhiều từ của lô nhất. Học xong cả lô thì quay lại học thường, các từ này đã vào lịch ôn.'),
     !pool.length ? h('div', {class:'banner'}, 'Không còn từ nào chưa học. Khi nạp từ mới, anh vào đây để học dồn.') : null,
     h('section', {class:'panel'}, h('h2', null, 'Lấy từ nào'), srcSel, sample),
