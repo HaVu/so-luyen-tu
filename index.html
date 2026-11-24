@@ -3183,7 +3183,10 @@ const Ck = {
     const out = []; let j = n; while (j > 0) { const i = from[j]; out.unshift(text.slice(i, j)); j = i; }
     return {words:out, score:best[n]};
   },
-  pys(text){ try { return pinyinPro.pinyin(text, {type:'array', nonZh:'consecutive'}); } catch (e) { return []; } },
+  pys(text){ let a; try { a = pinyinPro.pinyin(text, {type:'array', nonZh:'consecutive'}); } catch (e) { return []; }
+    /* từ có trong sổ từ của lớp thì đọc theo sổ (热闹 rènao, 有更多…) */
+    if (this.dict && a.length === text.length) { let i = 0; this.seg(text).words.forEach(w => { const it = V.byH[w]; if (it && it.syl && it.syl.length === w.length) it.syl.forEach((y, k) => { a[i + k] = y; }); i += w.length; }); }
+    return a; },
   async translate(text){
     text = text.trim(); if (!text) return ''; if (this.trCache[text]) return this.trCache[text];
     const tries = [
