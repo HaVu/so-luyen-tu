@@ -2405,8 +2405,23 @@ const FX = {
   level(){ const v = this.set().fx || 'full'; if (v === 'full' && window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return 'light'; return v; },
   ctx(){
     if (!this.ac){ const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; try { this.ac = new C(); this.out = this.ac.createGain(); this.out.gain.value = 0.55; this.out.connect(this.ac.destination); } catch (e) { this.ac = null; return null; } }
-    if (this.ac.state !== 'running') { try { const p = this.ac.resume(); if (p && p.catch) p.catch(() => {}); } catch (e) {} }
+    /* iPhone, iPad sau khi chuyển app, khoá máy hay có cuộc gọi: bộ phát có lúc báo "running" mà đồng hồ đứng yên (phát không ra tiếng),
+       hoặc kẹt ở "interrupted" không resume được. Đồng hồ âm thanh chạy chậm hơn một nửa đồng hồ thật thì bỏ bộ cũ, tạo bộ mới. */
+    const now = performance.now() / 1000;
+    if (this.ac.state === 'running' && this._w != null && now - this._w > 1.5 && (this.ac.currentTime - this._c) < (now - this._w) * 0.5) { this._w = null; return this.recreate(); }
+    if (this.ac.state !== 'running') {
+      this._stuck = (this._stuck || 0) + 1;
+      if (this._stuck > 2 || this.ac.state === 'interrupted' && this._stuck > 1) { this._stuck = 0; return this.recreate(); }
+      try { const p = this.ac.resume(); if (p && p.then) p.then(() => { this._stuck = 0; }, () => {}); } catch (e) {}
+    } else this._stuck = 0;
+    this._w = now; this._c = this.ac.currentTime;
     return this.ac;
+  },
+  /* bộ đã giải mã (AudioBuffer) dùng lại được cho bộ phát mới, không phải tải lại */
+  recreate(){
+    try { const old = this.ac; this.ac = null; this.out = null; if (old && old.close) old.close().catch(() => {}); } catch (e) {}
+    const ac = this.ctx(); if (ac && ac.state !== 'running') { try { const p = ac.resume(); if (p && p.catch) p.catch(() => {}); } catch (e) {} }
+    return ac;
   },
   buf(id){
     if (!this.bufs[id]) this.bufs[id] = fetch('sfx/' + id + '.mp3').then(r => { if (!r.ok) throw new Error('http'); return r.arrayBuffer(); })
@@ -2467,10 +2482,11 @@ const FX = {
   },
   demo(){ [0, 2, 4, 7].forEach((s, i) => this.play('note', s, 0.6, i * 0.32)); this.play('wrong', 0, 0.5, 1.5); this.play('stamp', 0, 0.7, 2.2); this.play('done', 0, 0.45, 2.65); }
 };
-document.addEventListener('pointerdown', e => { FX.px = e.clientX; FX.py = e.clientY; if (FX.sndOn()) FX.unlock(); }, {passive:true, capture:true});
+/* rời app quá 8 giây thì lần chạm đầu tiên khi quay lại tạo bộ phát mới (trong lúc chạm, máy cho phép bật tiếng) */
+document.addEventListener('pointerdown', e => { FX.px = e.clientX; FX.py = e.clientY; if (FX.sndOn()) { if (FX.fresh && FX.ac) { FX.fresh = false; FX.mediaMode(); FX.recreate(); } FX.unlock(); } }, {passive:true, capture:true});
 /* quay lại app sau khi chuyển sang app khác: máy treo bộ phát âm, đánh thức lại ở lần chạm kế tiếp và ngay khi app hiện lại */
 document.addEventListener('touchend', () => { if (FX.sndOn()) FX.unlock(); }, {passive:true, capture:true});
-document.addEventListener('visibilitychange', () => { if (document.visibilityState !== 'visible') { try { if (FX.keep) FX.keep.pause(); } catch (e) {} return; } try { if (FX.ac && FX.ac.state === 'closed') { FX.ac = null; FX.bufs = {}; } if (FX.sndOn()) { FX.mediaMode(); FX.ctx(); } } catch (e) {} });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState !== 'visible') { FX.hidAt = Date.now(); try { if (FX.keep) FX.keep.pause(); } catch (e) {} return; } try { if (FX.ac && FX.ac.state === 'closed') { FX.ac = null; } if (FX.hidAt && Date.now() - FX.hidAt > 8000) FX.fresh = true; FX.hidAt = 0; if (FX.sndOn()) { FX.mediaMode(); FX.ctx(); } } catch (e) {} });
 window.addEventListener('pageshow', () => { try { if (FX.ac && FX.ac.state !== 'running') FX.ctx(); } catch (e) {} });
 /* tiếng chạm nhẹ: chỉ cho nút điều hướng và nút ngoài bài tập, để không chồng lên tiếng đúng sai */
 document.addEventListener('click', e => {
@@ -3113,6 +3129,7 @@ function prArt(sk){
   return im;
 }
 function viewPractice(pick){
+  if (typeof pick !== 'string' || !PR_SK.some(x => x.id === pick)) pick = undefined; /* gọi thẳng từ nút (nhận sự kiện bấm) thì về trang chọn kỹ năng */
   const learned = items().filter(it => P('m')[it.h]).length;
   if (!pick) {
     const pst = META().pst || {}, pool = blitzPool().length;
@@ -4043,7 +4060,7 @@ const Session = {
         h('table', {class:'sk'}, h('tbody', null, SKC.filter(k => S.by[k]).map(k => h('tr', null, h('td', null, SKN[k]), h('td', {class:'n'}, S.by[k][1] + ' / ' + S.by[k][0] + ' đúng'))))),
         wk && S.by[wk][1] < S.by[wk][0] ? h('p', {class:'muted'}, 'Yếu nhất trong phiên này: ' + SKN[wk] + '.') : null,
         h('p', {class:'muted'}, 'Hẹn đến hết ngày mai: ' + st.tomorrow + ' thẻ.')),
-      h('div', {class:'row', style:'justify-content:center'}, h('button', {type:'button', class:'btn terra big', onclick:viewHome}, 'Về trang chính'), wasPractice ? h('button', {type:'button', class:'btn big', onclick:viewPractice}, 'Luyện tiếp') : null)
+      h('div', {class:'row', style:'justify-content:center'}, h('button', {type:'button', class:'btn terra big', onclick:viewHome}, 'Về trang chính'), wasPractice ? h('button', {type:'button', class:'btn big', onclick:() => viewPractice(prSkEnd && prSkEnd !== 'blitz' && PR_SK.some(x => x.id === prSkEnd) ? prSkEnd : undefined)}, 'Luyện tiếp') : null)
     ]);
     if (S.n) FX.stamp(box);
     KEYS = {Enter:viewHome};
