@@ -1747,14 +1747,21 @@ const Ink = {
     let rating = 3;
     if (strict) { if (hard === 1 && N >= 6 && !soft) rating = 2; else if (hard) rating = 1; else if (soft) rating = soft <= 2 ? 2 : 1; }
     else { const tol = N <= 5 ? 0 : (N <= 11 ? 1 : 2); if (hard > tol || joined > Math.max(1, N / 5)) rating = 1; else if (hard || joined > 1 || soft > Math.max(2, N / 3)) rating = 2; }
+    /* kiểm hình dạng (24/11): các nét được ghép phải giống nét mẫu thật sự. Trước đây mỗi nét được lệch tới 245 (trên khung 1024)
+       nên viết chữ khác cùng số nét vẫn được "Đúng" (会 viết vào chỗ 回). Lệch trung bình trên 95 hoặc một nét lệch trên 200 thì hạ một bậc,
+       lệch trung bình trên 130 là chữ khác hẳn. Thử 6.000 lần: chữ khác bị nhận nhầm từ 13% còn 1%, chữ đúng viết ẩu vẫn qua 99%. */
+    const pc = pairs.map(q => C[q[0]][q[1]]), pm = pc.length ? pc.reduce((a2, b2) => a2 + b2, 0) / pc.length : 0, ptop = pc.length ? Math.max.apply(null, pc) : 0;
+    let off = false;
+    if (pm > 130) { off = rating > 1; rating = 1; } else if (pm > 95 || ptop > 200) { off = rating > 1; rating = Math.max(1, rating - 1); }
     const parts = [];
+    if (off) parts.push('Nét viết khác nhiều so với chữ mẫu');
     if (missing.length) parts.push('Thiếu ' + missing.length + ' nét');
     if (extra.length) parts.push('Thừa ' + extra.length + ' nét');
     if (order.length) parts.push('Thứ tự chuẩn khác ở nét ' + order.map(x => x + 1).join(', '));
     if (rev.length) parts.push('Nét ' + rev.map(x => x + 1).join(', ') + ' ngược chiều');
     if (joined) parts.push(joined + ' chỗ viết liền hoặc tách nét');
     const head = rating === 3 ? 'Đúng' : (rating === 2 ? 'Gần đúng' : 'Chưa đúng');
-    return {ok:rating === 3, missing, extra, order, rev, joined, n:N, k:K, rating, cost:dp[K][N] / Math.max(K, N), note:parts.length ? head + '. ' + parts.join('. ') : head};
+    return {ok:rating === 3, shapeOff:off, shapeMean:Math.round(pm), missing, extra, order, rev, joined, n:N, k:K, rating, cost:dp[K][N] / Math.max(K, N), note:parts.length ? head + '. ' + parts.join('. ') : head};
   }
 };
 /* ===== Cuộn trang khi đang ở ô viết (23/11) =====
