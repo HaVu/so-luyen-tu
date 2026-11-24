@@ -862,6 +862,18 @@ input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;bac
 .botable{display:flex;flex-direction:column;gap:6px;margin-top:8px}
 .borow summary{display:flex;align-items:center;gap:10px;cursor:pointer;padding:6px 4px}
 .borow summary small{margin-left:auto}
+.botimer{height:10px;border-radius:99px;background:var(--line);overflow:hidden;margin:0 0 10px;box-shadow:inset 0 2px 3px rgba(0,0,0,.2)}
+.botimer i{display:block;height:100%;width:100%;background:var(--jade);border-radius:99px;transition:width .1s linear}
+.botimer.low i{background:#d9482f}
+.boadvrow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.boadvbtn{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:4px;padding:14px;border-radius:18px;border:2px solid var(--line);background:var(--card);
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.06),inset 0 2px 0 rgba(255,255,255,.6),0 4px 8px rgba(60,35,10,.16)}
+.boadvbtn b{font-size:18px;color:var(--h-ink,var(--ink))}
+.boadvbtn span{font-size:13.5px;color:var(--muted);line-height:1.35}
+.boadvbtn:active{transform:translateY(2px)}
+.boresult{text-align:center}
+.bobig{font-size:44px;font-weight:800;margin:4px 0;color:var(--h-ink,var(--ink))}
+@media (max-width:380px){.boadvrow{grid-template-columns:1fr}}
 
 /* màn chờ khi mở app */
 #splash{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;background-color:var(--paper);background-image:var(--art-bg,none);background-size:var(--art-bgsize,auto);transition:opacity .45s ease,visibility .45s}
@@ -3122,7 +3134,8 @@ function viewPractice(pick){
     h('div', {class:'prhead pr-' + pick}, prArt(sk), h('div', null, h('h1', null, sk.name), h('p', {class:'muted'}, sk.sub)),
       h('button', {type:'button', class:'btn small', onclick:() => viewPractice()}, 'Đổi kỹ năng')),
     pick === 'b' ? h('section', {class:'panel'}, h('h2', null, 'Ôn theo bộ'), h('p', {class:'fine'}, 'Dùng các chữ bạn đã học (' + Bo.learned().size + ' chữ, ' + Bo.families().size + ' bộ). Bộ nào bạn hay nhầm hoặc lâu chưa gặp sẽ ra nhiều hơn. Năm dạng bài: chữ thuộc bộ nào, chữ nào mang bộ này, đoán nghĩa nhờ bộ, ghép chữ từ hai phần, đọc âm nhờ phần gợi âm.'),
-      h('details', {class:'ckopt'}, h('summary', null, 'Xem bảng các bộ đã gặp'), boTable())) :
+      h('details', {class:'ckopt'}, h('summary', null, 'Xem bảng các bộ đã gặp'), boTable()),
+      h('p', {class:'fine'}, 'Học xong phần này, cuối buổi sẽ có hai bài nâng cao để chọn: viết bộ và thử thách 20 câu tính giờ.')) :
     h('section', {class:'panel'}, h('h2', null, 'Lấy từ nào'), one(PR_SRC, 'src'), grpRow,
       h('small', {class:'fine'}, '"Gợi ý cho bạn" chọn những từ kỹ năng này của bạn đang yếu nhất, từ hay sai và từ vừa sai lần luyện trước.'), info),
     h('section', {class:'panel'}, h('h2', null, 'Thời lượng'), one([5, 10, 15, 20, 30].map(m => [m, m + ' phút']), 'mins'), quietNote,
@@ -3668,11 +3681,19 @@ function pickW(list, w){ const tot = list.reduce((a, x) => a + w(x), 0); let v =
 function boGen(cfg){
   const L = Bo.learned(), fam = Bo.families(L), chars = Array.from(L.values());
   if (!chars.length) return () => null;
-  const kinds = ['b1', 'b2', 'b3', 'b4', 'b5'], pk = META().pk || {}, wk = k => { const r = pk[k]; if (!r || r[0] < 5) return 1; return 0.6 + 1.6 * (1 - r[1] / r[0]); };
+  if (cfg.boMode === 'write') {
+    /* viết bộ: mỗi bộ đã gặp một lần, bộ cần ôn trước; chỉ lấy bộ có tên và có dữ liệu nét */
+    const sc = r => Bo.need(r) + (fam.get(r).some(x => x.c !== r) ? 1 : 0) + (fam.get(r).length > 1 ? 0.5 : 0) + Math.random() * 0.6;
+    const rs = Array.from(fam.keys()).filter(r => BO_NAME[r] || r === '阝').map(r => [sc(r), r]).sort((a, b) => b[0] - a[0]).map(x => x[1]).slice(0, cfg.count || 10); let i = 0;
+    rs.forEach(r => { const xs = fam.get(r); xs.sort((a, b) => (a.c === r) - (b.c === r)); });
+    return () => { if (i >= rs.length) return null; const r = rs[i++], x = fam.get(r)[0]; return {sk:'b', kind:'bo', bo:'bw', pk:'bw', key:r, item:x.it, ch:x.c, rad:r}; };
+  }
+  const kinds = cfg.boMode === 'timed' ? ['b1', 'b2', 'b3', 'b4', 'b5'] : ['b1', 'b2', 'b3', 'b4', 'b5'], pk = META().pk || {}, wk = k => { const r = pk[k]; if (!r || r[0] < 5) return 1; return 0.6 + 1.6 * (1 - r[1] / r[0]); };
   const recent = [];
   const pickChar = filter => { const pool = chars.filter(x => recent.indexOf(x.c) < 0 && Bo.of(x.c).r !== x.c && (!filter || filter(x))); if (!pool.length) return null; const x = pickW(pool, y => Bo.need(Bo.of(y.c).r) * (fam.get(Bo.of(y.c).r).length > 1 ? 1.3 : 1)); recent.push(x.c); if (recent.length > 8) recent.shift(); return x; };
   const mk = (kind, x, extra) => Object.assign({sk:'b', kind:'bo', bo:kind, pk:kind, key:x.c, item:x.it, ch:x.c}, extra || {});
-  return function next(){
+  let made = 0;
+  const gen = function(){
     for (let t = 0; t < 30; t++){
       const k = pickW(kinds, wk);
       if (k === 'b1') { const x = pickChar(); if (x) return mk(k, x); }
@@ -3683,6 +3704,7 @@ function boGen(cfg){
     }
     const x = pickChar() || chars[Math.floor(Math.random() * chars.length)]; return mk('b1', x);
   };
+  return function next(){ if (cfg.boMode === 'timed' && made >= (cfg.count || 20)) return null; made++; const ex = gen(); if (cfg.boMode === 'timed') ex.timed = ex.bo === 'b4' ? 20 : 12; return ex; };
 }
 /* khung giải thích sau mỗi câu: bộ, nghĩa, cấu tạo, và các chữ đã học cùng bộ */
 function boFamily(c){
@@ -3701,19 +3723,21 @@ function exBo(ex, api){
   let done = false, timer = null;
   const finish = ok => {
     if (done) return; done = true; Bo.mark(o.r, ok); api.count('b', ok);
-    after.append(h('p', {class:'verdict ' + (ok ? 'ok' : 'bad')}, ok ? 'Đúng' : 'Chưa đúng'), boFamily(c));
+    after.append(finish.timeout ? '' : h('p', {class:'verdict ' + (ok ? 'ok' : 'bad')}, ok ? 'Đúng' : 'Chưa đúng'), boFamily(c));
     const go = () => { clearTimeout(timer); api.next(); }; after.appendChild(nextRow(go)); KEYS = {Enter:go, ' ':go};
     if (ok && SET().auto) timer = setTimeout(go, 2600); after.addEventListener('pointerdown', () => clearTimeout(timer));
   };
   const word = () => h('p', {class:'muted'}, 'trong từ ', h('b', {lang:'zh-Hans'}, it.h), ' ' + it.p + ' · ' + it.m);
   const big = (ch, px) => h('div', {class:'center'}, cellEl(ch, px || 120));
-  let prompt = null, body = null;
+  let prompt = null, body = null, rightSel = null;
+  if (ex.bo === 'bw') return exBoWrite(ex, api);
   if (ex.bo === 'b1') {
     /* chữ này thuộc bộ nào: nhiễu là các phần khác của chính chữ, bộ dễ nhầm và bộ khác đã học */
     const comp = Array.from(o.ids).filter(x => BO_NAME[x] && x !== o.r);
     const pool = Array.from(new Set(comp.concat(boConf(o.r)).concat(shuffle(Array.from(Bo.families().keys())))).values()).filter(x => x !== o.r && BO_NAME[x]);
     const list = [o.r].concat(pool.slice(0, 3));
     prompt = h('div', {class:'prompt'}, big(c), word(), h('p', {class:'ask'}, 'Chữ ' + c + ' thuộc bộ nào?'));
+    rightSel = '[data-r="' + o.r + '"]';
     body = h('div', {class:'opts boopts'}); shuffle(list).forEach((r, i) => body.appendChild(h('button', {type:'button', class:'opt', onclick:e => { if (done) return; Array.from(body.children).forEach(b => { b.disabled = true; if (b.dataset.r === o.r) b.classList.add('right'); }); if (r !== o.r) e.currentTarget.classList.add('wrong'); body.classList.add('done'); finish(r === o.r); }, 'data-r':r},
       h('span', {class:'k'}, i + 1), h('span', {class:'boglyph sm', lang:'zh-Hans'}, r), ' ' + boLabel(r, c))));
   } else if (ex.bo === 'b2') {
@@ -3722,6 +3746,7 @@ function exBo(ex, api){
     const conf = boConf(o.r), near = wrongs.filter(x => conf.indexOf(Bo.of(x.c).r) >= 0);
     const list = [c].concat(Array.from(new Set(near.concat(wrongs).map(x => x.c))).slice(0, 3));
     prompt = h('div', {class:'prompt'}, h('div', {class:'center'}, h('span', {class:'boglyph big', lang:'zh-Hans'}, o.r)), h('p', {class:'ask'}, boLabel(o.r, c) + '. Chữ nào mang bộ này?'));
+    rightSel = '[data-c="' + c + '"]';
     body = h('div', {class:'opts han'}); shuffle(list).forEach((x, i) => body.appendChild(h('button', {type:'button', class:'opt han', lang:'zh-Hans', 'data-c':x, onclick:e => { if (done) return; Array.from(body.children).forEach(b => { b.disabled = true; if (b.dataset.c === c) b.classList.add('right'); }); if (x !== c) e.currentTarget.classList.add('wrong'); body.classList.add('done'); finish(x === c); }}, h('span', {class:'k'}, i + 1), x)));
   } else if (ex.bo === 'b3') {
     /* đoán nghĩa nhờ bộ: nhiễu là nghĩa của chữ cùng âm hoặc cùng phần gợi âm */
@@ -3731,6 +3756,7 @@ function exBo(ex, api){
     const list = [w].concat(Array.from(new Set(shuffle(sound).concat(shuffle(others)))).slice(0, 3));
     const hint = h('p', {class:'fine', hidden:true}, 'Gợi ý: ' + sem + ' là ' + boLabel(sem, c).toLowerCase() + '.');
     prompt = h('div', {class:'prompt'}, big(w.h.length === 1 ? c : w.h, w.h.length === 1 ? 120 : 90), h('p', {class:'muted'}, w.p), h('p', {class:'ask'}, 'Nhìn phần chỉ nghĩa ' + sem + ' trong chữ ' + c + '. Từ này nghĩa là gì?'), h('button', {type:'button', class:'btn small ghost', onclick:e => { hint.hidden = false; e.currentTarget.hidden = true; }}, 'Gợi ý'), hint);
+    rightSel = '[data-h="' + w.h + '"]';
     body = h('div', {class:'opts'}); shuffle(list).forEach((x, i) => body.appendChild(h('button', {type:'button', class:'opt', 'data-h':x.h, onclick:e => { if (done) return; Array.from(body.children).forEach(b => { b.disabled = true; if (b.dataset.h === w.h) b.classList.add('right'); }); if (x !== w) e.currentTarget.classList.add('wrong'); body.classList.add('done'); finish(x === w); }}, h('span', {class:'k'}, i + 1), x.m)));
   } else if (ex.bo === 'b4') {
     /* ghép chữ: chọn hai phần theo đúng thứ tự (trái rồi phải, hoặc trên rồi dưới) */
@@ -3755,11 +3781,64 @@ function exBo(ex, api){
     const sameR = shuffle(chars.filter(x => Bo.of(x.c).r === o.r && x.c !== c)); sameR.forEach(x => add(Bo.of(x.c).py));
     shuffle(chars).forEach(x => add(Bo.of(x.c).py));
     prompt = h('div', {class:'prompt'}, big(c), h('p', {class:'ask'}, 'Phần ' + ph + ' (' + po.py + ') gợi âm cho chữ này. Chữ ' + c + ' đọc là gì?'));
+    rightSel = '[data-p="' + o.py + '"]';
     body = h('div', {class:'opts'}); shuffle(Array.from(pys)).forEach((p, i) => body.appendChild(h('button', {type:'button', class:'opt', 'data-p':p, onclick:e => { if (done) return; Array.from(body.children).forEach(b => { b.disabled = true; if (b.dataset.p === o.py) b.classList.add('right'); }); if (p !== o.py) e.currentTarget.classList.add('wrong'); body.classList.add('done'); finish(p === o.py); if (SET().snd) speak(c, 0.8); }}, h('span', {class:'k'}, i + 1), p)));
     void plainPy;
   }
   KEYS = {}; Array.from(body.querySelectorAll('button.opt')).forEach((b, i) => { KEYS[String(i + 1)] = () => b.click(); });
+  /* thử thách tính giờ: hết giờ là tính sai và hiện đáp án */
+  if (ex.timed) {
+    const bar = h('div', {class:'botimer'}, h('i')), t0 = Date.now(), T = ex.timed * 1000; prompt.prepend(bar);
+    const tk = setInterval(() => {
+      if (done || !bar.isConnected) { clearInterval(tk); return; }
+      const left = Math.max(0, T - (Date.now() - t0)); bar.firstChild.style.width = (left / T * 100) + '%'; bar.classList.toggle('low', left < 4000);
+      if (left <= 0) { clearInterval(tk); body.classList.add('done'); body.querySelectorAll('button').forEach(b => { b.disabled = true; if (rightSel && b.matches(rightSel)) b.classList.add('right'); });
+        if (ex.bo === 'b4') { const pt = Bo.parts(c); const sl = body.parentNode ? prompt.querySelectorAll('.boslot') : []; [pt.a, pt.b].forEach((v, i) => { if (sl[i]) { sl[i].textContent = v; sl[i].classList.add('bad'); } }); }
+        after.prepend(h('p', {class:'verdict bad'}, 'Hết giờ')); finish.timeout = true; finish(false); }
+    }, 100);
+  }
   return [prompt, body, after];
+}
+/* viết bộ theo tên: nhìn tên và nghĩa của bộ, viết bộ từ trí nhớ (không có chữ mờ); sai nhiều mới hiện gợi ý */
+function exBoWrite(ex, api){
+  const r = ex.rad, name = boName(r, ex.ch), fam = (Bo.families().get(r) || []).slice(0, 6), after = h('div');
+  const status = h('p', {class:'ask', role:'status'}), grid = h('div', {id:'grid'}), wbox = h('div', {id:'writer'}); grid.innerHTML = GUIDE; grid.appendChild(wbox);
+  ['touchstart', 'touchmove'].forEach(n => grid.addEventListener(n, e => { if (e.cancelable) e.preventDefault(); }, {passive:false}));
+  const hint = h('p', {class:'fine', hidden:true}, 'Gợi ý: bộ này có trong ', h('span', {lang:'zh-Hans', class:'hanline'}, fam.map(x => x.c).join(' ')));
+  let done = false, writer = null;
+  const end = ok => { if (done) return; done = true; Bo.mark(r, ok); api.count('b', ok); after.append(h('p', {class:'verdict ' + (ok ? 'ok' : 'bad')}, ok ? 'Đúng' : 'Chưa thuộc, bộ này sẽ quay lại'), boFamily(ex.ch)); const go = () => api.next(); after.appendChild(nextRow(go)); KEYS = {Enter:go}; };
+  const giveUp = h('button', {type:'button', class:'btn small ghost', onclick:() => { if (done || !writer) return; writer.cancelQuiz(); writer.showCharacter(); writer.animateCharacter(); end(false); }}, 'Xem bộ mẫu');
+  setTimeout(async () => {
+    const d = await Strokes.get(r).catch(() => null);
+    if (!d) { status.textContent = 'Chưa có dữ liệu nét của bộ này.'; end(true); return; }
+    const px = Math.max(200, Math.min((grid.parentElement && grid.parentElement.clientWidth || 320) - 4, 340, window.innerHeight - 380)); grid.style.width = px + 'px'; grid.style.height = px + 'px';
+    const total = d.strokes.length; let tm = 0;
+    writer = window.HanziWriter.create(wbox, r, {width:px, height:px, padding:Math.round(px * 0.1), showCharacter:false, showOutline:false, strokeColor:cssVar('--ink'), outlineColor:cssVar('--outline'), drawingColor:cssVar('--jade'), highlightColor:cssVar('--seal'),
+      drawingWidth:Math.max(6, Math.round(px / 40)), showHintAfterMisses:3, highlightOnComplete:true, leniency:1.6, acceptBackwardsStrokes:!SET().strict, charDataLoader:(c, on) => on(d)});
+    status.textContent = 'Bộ này có ' + total + ' nét';
+    writer.quiz({onMistake:() => { if (++tm >= 2) hint.hidden = false; status.textContent = 'Chưa đúng nét'; }, onCorrectStroke:s => { status.textContent = 'Nét ' + (s.strokeNum + 1) + '/' + total; },
+      onComplete:sum => { status.textContent = ''; end(sum.totalMistakes <= 1); }});
+  }, 30);
+  return [h('div', {class:'prompt'}, h('p', {class:'ask'}, 'Viết bộ ' + name[0] + ' (' + name[1] + ')'), h('p', {class:'muted'}, 'Viết từ trí nhớ, không có chữ mờ. Sai hai lần sẽ hiện gợi ý.'), hint), grid, status, h('div', {class:'center'}, giveUp), after];
+}
+/* cuối buổi Ôn theo bộ: mời luyện nâng cao (viết bộ, thử thách 20 câu tính giờ) hoặc kết thúc */
+function boAfterFinish(S){
+  const v = document.getElementById('view'); if (!v) return;
+  const last = v.lastElementChild, best = META().boBest;
+  const go = cfg => { Snd.unlock(); FX.unlock(); Session.startPractice(Object.assign({skill:'b', kinds:['b1'], src:'all', mins:60}, cfg)); };
+  let res = null;
+  if (S.boModeEnd === 'timed') {
+    const ms = S.boMs || 0, ok = S.ok, n = S.n, rec = !best || ok > best.ok || (ok === best.ok && ms < best.ms);
+    if (rec && n) { const m = META(); m.boBest = {ok, n, ms, t:Date.now()}; Store.mark('meta'); Store.flush(); }
+    res = h('section', {class:'panel boresult'}, h('h2', null, 'Kết quả thử thách'), h('p', {class:'bobig'}, ok + ' / ' + n), h('p', {class:'muted'}, 'trong ' + (ms / 1000).toFixed(0) + ' giây'),
+      rec && n ? h('p', {class:'verdict ok'}, best ? 'Kỷ lục mới!' : 'Kỷ lục đầu tiên của bạn.') : best ? h('p', {class:'fine'}, 'Kỷ lục: ' + best.ok + ' / ' + best.n + ' trong ' + (best.ms / 1000).toFixed(0) + ' giây') : null);
+  }
+  const panel = h('section', {class:'panel boadv'}, h('h2', null, 'Luyện nâng cao'), h('p', {class:'muted'}, 'Muốn thử thêm thì chọn một bài dưới đây, không thì kết thúc ở đây.'),
+    h('div', {class:'boadvrow'},
+      h('button', {type:'button', class:'boadvbtn', onclick:() => go({boMode:'write', count:10})}, h('b', null, 'Viết bộ'), h('span', null, '10 bộ, nhìn tên viết bộ từ trí nhớ')),
+      h('button', {type:'button', class:'boadvbtn', onclick:() => go({boMode:'timed', count:20})}, h('b', null, 'Thử thách 20 câu'), h('span', null, '12 giây mỗi câu' + (best ? ' · kỷ lục ' + best.ok + '/' + best.n : '')))));
+  if (res) v.insertBefore(res, v.firstChild);
+  v.insertBefore(panel, last);
 }
 /* bảng các bộ đã gặp: xếp theo số chữ đã học */
 function boTable(){
@@ -3768,6 +3847,8 @@ function boTable(){
     return h('details', {class:'borow'}, h('summary', null, h('span', {class:'boglyph sm', lang:'zh-Hans'}, r), h('span', null, boLabel(r, xs[0].c)), h('small', {class:'muted'}, xs.length + ' chữ' + (a ? ' · đúng ' + a[1] + '/' + a[0] : ''))),
       h('div', {class:'bochips', lang:'zh-Hans'}, xs.map(x => h('span', {class:'bochip'}, h('b', null, x.c), h('small', null, Bo.of(x.c).py || ''), h('small', {class:'mean'}, x.it.h === x.c ? x.it.m : x.it.h))))); }));
 }
+
+try { if (typeof SKN === 'object' && !SKN.b) SKN.b = 'Bộ thủ'; } catch (e) {}
 
 
 /* ================= phiên học ================= */
@@ -3833,7 +3914,7 @@ const Session = {
     migrateKeys();
     const now = Date.now(), S = this;
     Object.assign(S, {on:true, practice:true, blitz:null, onResult:null, t0:now, T:cfg.mins * 60000, pi:0, again:[], n:0, ok:0, by:{}, over:false, wrapN:0, newN:0, exT0:now, covered:new Set(), tick:null, missed:new Set(), redo:0, sealCh:null, sealNew:null}); FX.reset();
-    S.prSkill = cfg.skill || null;
+    S.prSkill = cfg.skill || null; S.boMode = cfg.boMode || null; S.boCh = cfg.boMode === 'timed' ? (cfg.count || 20) : cfg.boMode === 'write' ? (cfg.count || 10) : null;
     if (cfg.skill) S.onResult = (ex, ok) => { const m = META(), k = ex.pk || ex.kind; m.pk = m.pk || {}; const r = m.pk[k] = m.pk[k] || [0, 0]; r[0]++; if (ok) r[1]++; if (r[0] > 60) { r[0] = Math.round(r[0] / 2); r[1] = Math.round(r[1] / 2); }
       const key = ex.item ? ex.item.h : null; if (key) { m.pmiss = m.pmiss || {}; if (!ok) m.pmiss[key] = Date.now(); else delete m.pmiss[key]; } Store.mark('meta'); };
     S.phases = [{name:'Luyện tập', budget:Infinity, next:practiceGen(cfg)}];
@@ -3915,6 +3996,7 @@ const Session = {
   paintBar(){
     const f = $('#sbarFill'), t = $('#sbarTime'); if (!f || !this.on) return;
     const el = Date.now() - this.t0;
+    if (this.boCh) { f.style.width = Math.round(Math.min(this.n, this.boCh) / this.boCh * 100) + '%'; t.textContent = 'Câu ' + Math.min(this.n + 1, this.boCh) + '/' + this.boCh; return; }
     if (this.blitz) { const b = this.blitz; f.style.width = Math.round(b.done / b.total * 100) + '%'; t.textContent = 'Thuộc ' + b.done + '/' + b.total; return; }
     f.style.width = Math.min(100, el / this.T * 100) + '%'; t.textContent = fmtMin(el) + ' / ' + fmtMin(this.T);
   },
@@ -3922,11 +4004,12 @@ const Session = {
     const S = this; if (!S.on) return; S.on = false; clearInterval(S.tick); S.onResult = null; S.blitzEnd = S.blitz; S.blitz = null; try { Snd.el.pause(); } catch (e) {}
     if (S.n) { const L = todayLog(); if (!L.c) L.c = S.sealNew || S.sealCh || '学'; }
     if (S.n) setTimeout(() => Nhac.studied(), 1500);
+    const prSkEnd = S.prSkill; S.boModeEnd = S.boMode; S.boMs = Date.now() - S.t0; S.boMode = null; S.boCh = null;
     if (S.n && S.prSkill) { const m = META(); m.pst = m.pst || {}; m.pst[S.prSkill] = {n:S.n, ok:S.ok, t:Date.now()}; S.prSkill = null; }
     pruneLog(); Store.mark('meta'); Store.flush(); sendDiag({lastSession:{n:S.n, ok:S.ok, by:S.by, ms:Date.now() - S.t0}, snd:Snd.stat});
     if (S.vocabStale) { S.vocabStale = false; rebuildVocab(); }
     if (silent) return;
-    const SKC = SK.concat(['c']), wasPractice = S.practice, st = stats(), wk = SKC.filter(k => S.by[k] && S.by[k][0] >= 3).sort((a, b) => S.by[a][1] / S.by[a][0] - S.by[b][1] / S.by[b][0])[0];
+    const SKC = SK.concat(['c', 'b']), wasPractice = S.practice, st = stats(), wk = SKC.filter(k => S.by[k] && S.by[k][0] >= 3).sort((a, b) => S.by[a][1] / S.by[a][0] - S.by[b][1] / S.by[b][0])[0];
     const ch = (todayLog().c) || '学', lv = FX.level();
     const tile = (b, s) => h('div', {class:'tile'}, h('b', null, b), h('span', null, s));
     const box = h('section', {class:'panel finish'},
@@ -3947,6 +4030,7 @@ const Session = {
     ]);
     if (S.n) FX.stamp(box);
     KEYS = {Enter:viewHome};
+    if (prSkEnd === 'b' && S.n) try { boAfterFinish(S); } catch (e) {}
   }
 };
 
