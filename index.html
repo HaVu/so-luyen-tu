@@ -2829,7 +2829,7 @@ const Ocr = {
   },
   load(onProg){
     if (this.st) return this.st;
-    const files = [['lib/ort/ort-wasm-simd-threaded.wasm', 11.25], ['ocr/det.onnx', 2.43], ['ocr/rec.onnx', 10.69]], all = files.reduce((a, f) => a + f[1], 0), done = files.map(() => 0);
+    const v5 = window.__ocrv !== 4, files = [['lib/ort/ort-wasm-simd-threaded.wasm', 11.25], ['ocr/det.onnx', 2.43], v5 ? ['ocr/rec5.onnx', 16.56] : ['ocr/rec.onnx', 10.69]], all = files.reduce((a, f) => a + f[1], 0), done = files.map(() => 0);
     const tell = () => { if (onProg) onProg(Math.min(99, Math.round(done.reduce((a, b) => a + b, 0) / all * 100))); };
     this.st = (async () => {
       if (!window.ort) await this.script('lib/ort/ort.wasm.min.js');
@@ -2837,7 +2837,7 @@ const Ocr = {
       ort.env.wasm.numThreads = 1; ort.env.wasm.wasmPaths = new URL('lib/ort/', location.href).href; ort.env.wasm.wasmBinary = bufs[0];
       this.det = await ort.InferenceSession.create(bufs[1], {executionProviders:['wasm']});
       this.rec = await ort.InferenceSession.create(bufs[2], {executionProviders:['wasm']});
-      const k = await (await fetch('ocr/keys.txt')).text(); this.keys = ['', ...k.split('\n').filter((x, i, a) => !(i === a.length - 1 && x === '')), ' '];
+      const k = await (await fetch(v5 ? 'ocr/keys5.txt' : 'ocr/keys.txt')).text(); this.keys = ['', ...k.split('\n').filter((x, i, a) => !(i === a.length - 1 && x === '')), ' '];
       return true;
     })();
     this.st.catch(() => { this.st = null; });
@@ -2875,17 +2875,48 @@ const Ocr = {
     /* thứ tự đọc: gom thành dòng theo chiều dọc, trong dòng xếp trái sang phải */
     res.sort((a, b) => (a.y + a.h / 2) - (b.y + b.h / 2)); const lines = [];
     res.forEach(b => { const L = lines.find(l => Math.abs((l.cy) - (b.y + b.h / 2)) < Math.max(l.h, b.h) * 0.5); if (L) { L.items.push(b); L.cy = (L.cy * (L.items.length - 1) + b.y + b.h / 2) / L.items.length; } else lines.push({cy:b.y + b.h / 2, h:b.h, items:[b]}); });
-    return lines.map(l => l.items.sort((a, b) => a.x - b.x)).reduce((a, l) => a.concat(l), []);
+    /* các khung trên cùng một dòng nằm sát nhau thì gộp thành một: khung chồng mép làm một chữ bị đọc hai lần (热热闹) */
+    const merged = [];
+    lines.forEach(l => { const it = l.items.sort((a, b) => a.x - b.x); let cur = null;
+      it.forEach(b => { if (cur) { const hh = Math.max(cur.h, b.h), gap = b.x - (cur.x + cur.w), vo = Math.min(cur.y + cur.h, b.y + b.h) - Math.max(cur.y, b.y);
+          if (gap < hh * 1.6 && vo > Math.min(cur.h, b.h) * 0.4) { const x0 = Math.min(cur.x, b.x), y0 = Math.min(cur.y, b.y), x1 = Math.max(cur.x + cur.w, b.x + b.w), y1 = Math.max(cur.y + cur.h, b.y + b.h); cur = {x:x0, y:y0, w:x1 - x0, h:y1 - y0}; return; }
+          merged.push(cur); } cur = Object.assign({}, b); });
+      if (cur) merged.push(cur); });
+    return merged;
   },
-  async readBox(cv, b){
+  /* chữ viết tay hay để khoảng trống rộng giữa các chữ, bộ đọc (học trên chữ in sát nhau) dễ đọc một chữ thành hai lần.
+     Ép các khoảng trống dài lại còn khoảng 0,3 chiều cao dòng; giữ bảng đổi toạ độ để biết chữ nằm đâu trên ảnh gốc */
+  squeeze(cv, b){
+    const x0 = Math.max(0, Math.floor(b.x)), y0 = Math.max(0, Math.floor(b.y)), W = Math.min(cv.width - x0, Math.ceil(b.w)), H = Math.min(cv.height - y0, Math.ceil(b.h));
+    if (W < 8 || H < 8) return null;
+    const d = cv.getContext('2d').getImageData(x0, y0, W, H).data, g = new Uint8Array(W * H);
+    for (let i = 0; i < W * H; i++) g[i] = (d[i * 4] * 299 + d[i * 4 + 1] * 587 + d[i * 4 + 2] * 114) / 1000;
+    const hst = new Float64Array(256); g.forEach(v => hst[v]++); let sum = 0; for (let i = 0; i < 256; i++) sum += i * hst[i];
+    let sB = 0, wB = 0, bv = 0, th = 128; for (let i = 0; i < 256; i++){ wB += hst[i]; if (!wB) continue; const wF = W * H - wB; if (!wF) break; sB += i * hst[i]; const mB = sB / wB, mF = (sum - sB) / wF, v = wB * wF * (mB - mF) * (mB - mF); if (v > bv) { bv = v; th = i; } }
+    th = Math.min(th, 200);
+    const ink = new Uint8Array(W * H); for (let i = 0; i < W * H; i++) ink[i] = g[i] < th ? 1 : 0;
+    /* bỏ dòng kẻ vở: vệt mực ngang dài hơn 1,5 lần chiều cao dòng */
+    const longRun = Math.round(H * 1.5);
+    for (let y = 0; y < H; y++){ let x = 0; while (x < W){ if (!ink[y * W + x]) { x++; continue; } let e = x; while (e < W && ink[y * W + e]) e++; if (e - x > longRun) for (let k = x; k < e; k++) ink[y * W + k] = 0; x = e; } }
+    const col = new Uint8Array(W); for (let x = 0; x < W; x++){ let n = 0; for (let y = 0; y < H; y++) n += ink[y * W + x]; col[x] = n > 0 ? 1 : 0; }
+    const gmax = Math.max(4, Math.round(H * 0.3)), segs = []; let x = 0, nw = 0;
+    while (x < W){ let e = x; const v = col[x]; while (e < W && col[e] === v) e++; let len = e - x; if (!v && len > gmax) { const keep = gmax; segs.push([x + ((len - keep) >> 1), keep]); nw += keep; } else { segs.push([x, len]); nw += len; } x = e; }
+    if (nw >= W - 2) return null;
+    const c = document.createElement('canvas'); c.width = nw; c.height = H; const cx = c.getContext('2d'), map = new Float32Array(nw + 1); let o = 0;
+    segs.forEach(([sx, len]) => { cx.drawImage(cv, x0 + sx, y0, len, H, o, 0, len, H); for (let k = 0; k < len; k++) map[o + k] = x0 + sx + k; o += len; }); map[nw] = x0 + W;
+    return {c, map, H};
+  },
+  async readBox(cv, b0){
+    const sq = this.squeeze(cv, b0), src = sq ? sq.c : cv, b = sq ? {x:0, y:0, w:sq.c.width, h:sq.H} : b0;
     const ratio = b.w / b.h, imgW = Math.min(1600, Math.max(320, Math.ceil(48 * ratio))), w = Math.min(imgW, Math.ceil(48 * ratio));
-    const t = this.tensorBGR(cv, b.x, b.y, b.w, b.h, w, 48, imgW, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5]);
+    const t = this.tensorBGR(src, b.x, b.y, b.w, b.h, w, 48, imgW, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5]);
+    const toX = x => sq ? sq.map[Math.max(0, Math.min(sq.map.length - 1, Math.round(x)))] : x;
     const out = await this.rec.run({[this.rec.inputNames[0]]:t}), o = out[this.rec.outputNames[0]], [, T, C] = o.dims, P = o.data, chars = []; let prev = -1;
     for (let s = 0; s < T; s++){
       let best = 0, bp = -1; for (let c = 0; c < C; c++){ const v = P[s * C + c]; if (v > bp) { bp = v; best = c; } }
       if (best !== 0 && best !== prev){
-        const top = []; for (let c = 1; c < C; c++){ const v = P[s * C + c]; if (v > 0.01) top.push([v, c]); } top.sort((a, b) => b[0] - a[0]);
-        chars.push({c:this.keys[best] || '', p:bp, cands:top.slice(0, 6).map(x => this.keys[x[1]]), cp:top.slice(0, 6).map(x => x[0]), s, x:b.x + (s + 0.5) * imgW / T * (b.w / w)});
+        const top = []; for (let c = 1; c < C; c++){ const v = P[s * C + c]; if (v > 0.002) top.push([v, c]); } top.sort((a, b) => b[0] - a[0]);
+        chars.push({c:this.keys[best] || '', p:bp, cands:top.slice(0, 8).map(x => this.keys[x[1]]), cp:top.slice(0, 8).map(x => x[0]), s, x:toX(b.x + (s + 0.5) * imgW / T * (b.w / w))});
       }
       prev = best;
     }
@@ -2926,7 +2957,7 @@ function paperPanel(o){
     if (busy) return; busy = true; res.textContent = '';
     try {
       status.textContent = 'Đang chuẩn bị bộ đọc chữ…';
-      await Ocr.load(p => { status.textContent = 'Đang tải bộ đọc chữ, chỉ lần đầu (khoảng 25 MB): ' + p + '%'; });
+      await Ocr.load(p => { status.textContent = 'Đang tải bộ đọc chữ, chỉ lần đầu (khoảng 30 MB): ' + p + '%'; });
       status.textContent = 'Đang đọc chữ trong ảnh…'; const t1 = Date.now();
       const r = await Ocr.read(f), got = []; r.lines.forEach(l => l.chars.forEach(c => { if (isHan(c.c) || c.cands.some(isHan)) got.push(c); }));
       status.textContent = '';
@@ -3131,7 +3162,8 @@ const Ck = {
     if (this.dictP) return this.dictP;
     this.dictP = fetch('data/tudien.txt').then(r => { if (!r.ok) throw new Error('từ điển'); return r.text(); }).then(t => {
       const m = new Map(); t.split('\n').forEach(l => { const i = l.indexOf(':'); if (i < 0) return; const b = +l.slice(0, i); l.slice(i + 1).split(',').forEach(w => { if (w) m.set(w, b); }); });
-      V.items.forEach(it => { if (!m.has(it.h) && it.h.length <= 6 && hanChars(it.h).length === it.h.length) m.set(it.h, 14); });
+      /* từ trong sổ từ của lớp: người học hay viết những từ này nên được ưu tiên khi đoán chữ */
+      V.items.forEach(it => { if (it.h.length <= 6 && hanChars(it.h).length === it.h.length) m.set(it.h, Math.max(m.get(it.h) || 0, it.h.length > 1 ? 17 : 15)); });
       this.dict = m; return m;
     }).catch(e => { this.dictP = null; throw e; });
     return this.dictP;
@@ -3173,6 +3205,74 @@ const Ck = {
     for (let i = 0; i < W * H; i++) g[i] = (d[i * 4] * 299 + d[i * 4 + 1] * 587 + d[i * 4 + 2] * 114) / 1000;
     const th = Math.min(this.otsu(g), 200), ink = new Uint8Array(W * H); for (let i = 0; i < W * H; i++) ink[i] = g[i] < th ? 1 : 0;
     return {x0, y0, W, H, ink};
+  },
+  /* chia dòng thành từng ô chữ theo khoảng trống giữa các cụm mực, mỗi ô rộng cỡ chiều cao chữ (chữ Hán gần vuông) */
+  cells(cv, line){
+    const L = this.lineInk(cv, line.box), {W, H, ink} = L;
+    const longRun = Math.round(H * 1.5);
+    for (let y = 0; y < H; y++){ let x = 0; while (x < W){ if (!ink[y * W + x]) { x++; continue; } let e = x; while (e < W && ink[y * W + e]) e++; if (e - x > longRun) for (let k = x; k < e; k++) ink[y * W + k] = 0; x = e; } }
+    const col = new Int32Array(W); for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) col[x] += ink[y * W + x];
+    const segs = []; let x = 0; while (x < W){ if (!col[x]) { x++; continue; } let e = x; while (e < W && col[e]) e++; let y0 = H, y1 = -1; for (let yy = 0; yy < H; yy++) for (let k = x; k < e; k++) if (ink[yy * W + k]) { if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; break; }
+      for (let yy = H - 1; yy >= 0; yy--) { let hit = false; for (let k = x; k < e; k++) if (ink[yy * W + k]) { hit = true; break; } if (hit) { y1 = yy; break; } }
+      let n = 0; for (let k = x; k < e; k++) n += col[k]; if (n >= 3) segs.push({a:x, z:e, y0, y1:y1 + 1}); x = e; }
+    if (!segs.length) return {L, cells:[]};
+    const hs = segs.map(sg => sg.y1 - sg.y0).sort((a, b) => a - b), S = Math.max(8, hs[Math.floor(hs.length * 0.75)] || H * 0.7);
+    const out = []; let cur = Object.assign({}, segs[0]);
+    for (let i = 1; i < segs.length; i++){ const sg = segs[i], gap = sg.a - cur.z, wide = sg.z - cur.a, cw = cur.z - cur.a, sw = sg.z - sg.a;
+      const join = (wide <= S * 1.18 && gap < S * 0.42) || (Math.min(cw, sw) < S * 0.3 && wide <= S * 1.3 && gap < S * 0.55);
+      if (join) { cur.z = sg.z; cur.y0 = Math.min(cur.y0, sg.y0); cur.y1 = Math.max(cur.y1, sg.y1); } else { out.push(cur); cur = Object.assign({}, sg); } }
+    out.push(cur);
+    out.forEach(c => { c.small = (c.y1 - c.y0) < S * 0.42 && (c.z - c.a) < S * 0.5; c.cx = L.x0 + (c.a + c.z) / 2; });
+    return {L, cells:out, S};
+  },
+  /* ghép kết quả đọc cả dòng với các ô chữ: một ô có hai chữ đọc ra (đọc lặp, đọc thêm nửa chữ) thì đọc lại riêng ô đó; ô bị bỏ sót cũng đọc riêng */
+  async reconcile(cv, line){
+    const {L, cells, S} = this.cells(cv, line); if (!cells.length || cells.length > 80) return false;
+    const bucket = cells.map(() => []);
+    line.chars.forEach(c => { let bi = -1, bd = 1e9; cells.forEach((ce, i) => { const d = c.x < L.x0 + ce.a ? L.x0 + ce.a - c.x : c.x > L.x0 + ce.z ? c.x - L.x0 - ce.z : 0; if (d < bd) { bd = d; bi = i; } }); if (bi >= 0 && bd < S * 0.6) bucket[bi].push(c); });
+    const out = [];
+    for (let i = 0; i < cells.length; i++){
+      const ce = cells[i], list = bucket[i], han = list.filter(c => isHan(c.c));
+      let pick = null;
+      if (ce.small) { pick = list.find(c => !isHan(c.c)) || (han.length && han[0].p > 0.85 ? han[0] : null); if (!pick) continue; }
+      else if (list.length === 1) pick = list[0];
+      else if (list.length > 1 && list.every(c => c.c === list[0].c)) pick = list.reduce((a, b) => b.p > a.p ? b : a);
+      else {
+        const pad = Math.round(S * 0.12), bx = {x:Math.max(0, L.x0 + ce.a - pad), y:Math.max(0, L.y0 + ce.y0 - pad), w:ce.z - ce.a + 2 * pad, h:ce.y1 - ce.y0 + 2 * pad};
+        let one = null; try { const r = (await Ocr.readBox(cv, bx)).filter(c => isHan(c.c)); if (r.length === 1 && r[0].p >= 0.35) one = r[0]; else if (r.length > 1) { const bst = r.reduce((a, b) => b.p > a.p ? b : a); if (bst.p >= 0.6) one = bst; } } catch (e) {}
+        const best = han.length ? han.reduce((a, b) => b.p > a.p ? b : a) : null;
+        pick = one && (!best || one.p >= best.p * 0.8) ? one : best;
+        if (!pick) continue;
+        /* giữ các chữ đọc được khác làm ứng viên */
+        const cs = pick.cands.slice(), cp = pick.cp.slice(); list.concat(one ? [one] : []).forEach(c => { if (cs.indexOf(c.c) < 0) { cs.push(c.c); cp.push(c.p * 0.5); } });
+        pick = Object.assign({}, pick, {cands:cs, cp});
+      }
+      const c = Object.assign({}, pick, {x:L.x0 + (ce.a + ce.z) / 2});
+      c.bx = {x:L.x0 + ce.a, y:L.y0 + ce.y0, w:ce.z - ce.a, h:ce.y1 - ce.y0}; c.ink = {L, a:ce.a, z:ce.z, y0:ce.y0, y1:ce.y1};
+      out.push(c);
+    }
+    if (!out.length) return false;
+    line.chars = out; return true;
+  },
+  /* chọn cách đọc cả câu: mỗi chữ có vài ứng viên kèm độ chắc; cộng điểm từ điển (từ thường gặp, từ trong sổ của lớp) để chọn chuỗi hợp nghĩa nhất */
+  decode(cs){
+    if (!this.dict) return cs;
+    const n = cs.length, LAM = 0.6, opts = cs.map(c => { if (!isHan(c.c) && !(c.cands || []).some(isHan)) return null; const o = [];
+      (c.cands || [c.c]).forEach((k, j) => { if (!isHan(k) || o.some(q => q[0] === k)) return; const p = c.cp ? c.cp[j] : c.p; if (p < 0.01 || o.length >= 5) return; o.push([k, Math.log2(Math.max(p, 1e-4))]); });
+      if (!o.length) o.push([c.c, 0]); return o; });
+    const best = new Float64Array(n + 1).fill(-1e18), back = new Array(n + 1); best[0] = 0;
+    const ws1 = w => { const b = this.dict.get(w); return b != null ? b - 26 : -32; };
+    for (let i = 0; i < n; i++){ if (best[i] <= -1e17) continue;
+      if (!opts[i]) { if (best[i] > best[i + 1]) { best[i + 1] = best[i]; back[i + 1] = [i, null]; } continue; }
+      for (let Ln = 1; Ln <= 4 && i + Ln <= n; Ln++){
+        if (opts.slice(i, i + Ln).some(o => !o)) break;
+        const lists = opts.slice(i, i + Ln); let combos = [['', 0]];
+        for (const o of lists){ const nx = []; combos.forEach(([w, lp]) => o.forEach(([k, l]) => nx.push([w + k, lp + l]))); combos = nx; if (combos.length > 700) break; }
+        for (const [w, lp] of combos){ if (w.length !== Ln) continue; const sc = Ln === 1 ? ws1(w) : (this.dict.has(w) ? this.dict.get(w) - 26 : null); if (sc == null) continue;
+          const v = best[i] + LAM * sc + lp; if (v > best[i + Ln]) { best[i + Ln] = v; back[i + Ln] = [i, w]; } } } }
+    if (best[n] <= -1e17) return cs;
+    const chosen = new Array(n); let j = n; while (j > 0) { const [i, w] = back[j]; if (w) for (let k = 0; k < w.length; k++) chosen[i + k] = w[k]; j = i; }
+    return cs.map((c, i) => { const k = chosen[i]; if (!k || k === c.c) return c; return Object.assign({}, c, {c:k, lmFrom:c.c}); });
   },
   splitLine(cv, line){
     const L = this.lineInk(cv, line.box), {W, H, ink} = L, col = new Float64Array(W);
@@ -3285,13 +3385,13 @@ function viewCheck(){
     if (busy) return; busy = true; out.textContent = '';
     try {
       status.textContent = 'Đang chuẩn bị bộ đọc chữ…';
-      await Ocr.load(p => { status.textContent = 'Đang tải bộ đọc chữ, chỉ lần đầu (khoảng 25 MB): ' + p + '%'; });
+      await Ocr.load(p => { status.textContent = 'Đang tải bộ đọc chữ, chỉ lần đầu (khoảng 30 MB): ' + p + '%'; });
       status.textContent = 'Đang đọc chữ trong ảnh…'; const t1 = Date.now();
       const [r] = await Promise.all([Ocr.read(f), Ck.loadDict().catch(() => null), Ck.loadPy().catch(() => null)]);
       const lines = r.lines.map(l => ({box:l.box, chars:l.chars.filter(c => c.c && c.c !== ' ')})).filter(l => l.chars.length);
       if (!lines.some(l => l.chars.some(c => isHan(c.c) || c.cands.some(isHan)))) { status.textContent = 'Không thấy chữ Hán nào trong ảnh. Chụp gần hơn, chữ to, đậm và đủ sáng rồi thử lại.'; busy = false; return; }
       status.textContent = 'Đang so từng chữ với nét chuẩn…';
-      lines.forEach(l => { Ck.fixPunct(l.chars); Ck.splitLine(r.canvas, l); Ck.mergeDup(l); });
+      for (const l of lines) { Ck.fixPunct(l.chars); let ok = false; try { ok = await Ck.reconcile(r.canvas, l); } catch (e) { ok = false; } if (!ok) { Ck.splitLine(r.canvas, l); Ck.mergeDup(l); } Ck.fixPunct(l.chars); if (Ck.dict) l.chars = Ck.decode(l.chars); }
       const chars = lines.flatMap((l, li) => l.chars.map(c => Object.assign(c, {line:li})));
       status.textContent = '';
       await showResult({canvas:r.canvas, lines, chars, ms:Date.now() - t1});
@@ -3322,7 +3422,7 @@ function viewCheck(){
       if (c.exp && c.exp !== c.c) return 'bad';
       if (c.fix) return 'ok';
       if (c.sc && c.sc.miss.length && c.sc.fitRest > 0.72 && c.sc.miss.length <= Math.max(1, Math.floor(c.sc.n / 4))) return 'bad';
-      if (c.p < 0.6 || sugg.some(s => chars[s.i] === c)) return 'warn';
+      if (c.lmFrom || c.p < 0.6 || sugg.some(s => chars[s.i] === c)) return 'warn';
       if (c.sc && (c.sc.fit < 0.5 || c.sc.miss.length)) return 'warn';
       return 'ok';
     };
@@ -3392,6 +3492,7 @@ function viewCheck(){
       const missTxt = tsc && tsc.miss.length && tsc.miss.length <= Math.max(1, Math.floor(tsc.n / 3)) ? 'Nét tô đỏ ở chữ mẫu có thể bị thiếu hoặc lệch nhiều trong chữ của bạn (nét thứ ' + tsc.miss.map(j => j + 1).join(', ') + ' trên ' + tsc.n + ' nét).' : '';
       const why = !R ? '' : tgt !== c.c ? 'Bạn định viết ' + tgt + ' (' + tpy + ') nhưng app đọc chữ của bạn thành ' + c.c + '. ' + (missTxt || 'So nét với chữ mẫu bên phải nhé.') :
         v === 'bad' ? missTxt + ' Nhìn lại chữ của bạn bên trái nhé.' :
+        v === 'warn' && c.lmFrom ? 'Nét chữ này trông gần với ' + c.lmFrom + ', nhưng app chọn ' + c.c + ' vì đặt vào câu thì hợp nghĩa hơn' + (V.byH[Ck.seg(text()).words.find(w => w.indexOf(c.c) >= 0) || ''] ? ' (có trong sổ từ của lớp)' : '') + '. Nếu bạn định viết ' + c.lmFrom + ' thì bấm chữ đó bên dưới.' :
         v === 'warn' ? (sugg.find(s2 => chars[s2.i] === c) ? 'Chữ này đọc ra hơi lạ trong câu. Có thể bạn định viết chữ khác bên dưới.' : 'App đọc chữ này chưa chắc chắn: nét có thể chưa rõ, dính nhau hoặc sai một phần.') :
         'Chữ rõ, đủ nét so với chữ mẫu.';
       const cands = (c.cands || []).filter(k => isHan(k) && k !== c.c).slice(0, 5);
@@ -3410,7 +3511,7 @@ function viewCheck(){
         h('div', {class:'center'}, h('button', {type:'button', class:'btn small ghost', onclick:() => { sel = -1; detail.hidden = true; paintAll(); }}, 'Đóng')));
       detail.scrollIntoView({behavior:'smooth', block:'nearest'});
     }
-    const t0 = text();
+    window.__lastCk = chars; const t0 = text();
     out.append(
       h('section', {class:'panel'}, h('h2', null, R ? 'App đọc được' : 'Câu của bạn'), sumLine, chipsBox,
         R ? h('p', {class:'fine'}, 'Xanh: rõ. Vàng: chưa chắc. Đỏ: có thể thiếu nét. Bấm một chữ để so với chữ mẫu, xem thứ tự nét hoặc sửa chữ app đọc nhầm.') : null,
