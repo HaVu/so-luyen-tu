@@ -770,6 +770,64 @@ input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;bac
 .scrolltip[hidden]{display:none}
 @keyframes tipIn{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
 
+/* ===== Kiểm tra chữ viết (24/11) ===== */
+.navg{display:none}
+@media (max-width:440px){#navSet .navt{display:none}#navSet .navg{display:inline;font-size:20px;line-height:1}#navSet{min-width:44px}}
+.ckbig{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:4px 0 8px}
+.ckbig .btn{flex:1 1 140px}
+.ckopt summary{cursor:pointer;font-weight:600;padding:6px 0;color:var(--h-ink,var(--ink))}
+.ckref,.cktype{width:100%;box-sizing:border-box;font-size:20px;margin:6px 0}
+.cktype{resize:vertical;min-height:84px;font-family:inherit}
+.ckchips{display:flex;flex-wrap:wrap;gap:6px 4px;align-items:flex-end;margin:10px 0 4px}
+.ckc{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;align-items:center;min-width:46px;padding:4px 4px 6px;border-radius:14px;border:2px solid var(--line);background:var(--card);
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.06),inset 0 2px 0 rgba(255,255,255,.6),0 2px 4px rgba(60,35,10,.14)}
+.ckc small{font-size:12px;color:var(--muted);min-height:15px;line-height:1.2}
+.ckc span{font-size:30px;line-height:1.15;color:var(--ink);font-family:var(--zh,inherit)}
+.ckc.ok{border-color:rgba(40,150,80,.55);background:linear-gradient(rgba(60,170,100,.10),rgba(60,170,100,.04)),var(--card)}
+.ckc.warn{border-color:rgba(220,150,20,.85);background:linear-gradient(rgba(240,180,40,.22),rgba(240,180,40,.08)),var(--card)}
+.ckc.bad{border-color:rgba(210,50,40,.85);background:linear-gradient(rgba(230,80,60,.2),rgba(230,80,60,.07)),var(--card)}
+.ckc.on{outline:3px solid var(--jade);outline-offset:2px}
+.ckc:active{transform:translateY(2px)}
+.ckpun{font-size:26px;color:var(--muted);padding:0 2px 6px}
+.ckpic{display:block;width:100%;height:auto;border-radius:14px;margin:12px 0 6px;box-shadow:0 3px 10px rgba(60,35,10,.2)}
+.ckdetail{margin:12px 0;padding:12px;border-radius:18px;border:2px dashed var(--line);background:var(--card2,var(--card))}
+.ckpair{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.ckpair figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:4px}
+.ckpair figcaption{font-size:13px;color:var(--muted)}
+.ckcrop{width:150px;height:auto;max-height:150px;object-fit:contain;border-radius:12px;background:#fff;box-shadow:inset 0 0 0 2px var(--line)}
+.ckstd{width:150px;height:150px;border-radius:12px;background:#fff;box-shadow:inset 0 0 0 2px var(--line);display:flex;align-items:center;justify-content:center;
+  background-image:linear-gradient(transparent calc(50% - .5px),rgba(200,60,40,.18) calc(50% - .5px),rgba(200,60,40,.18) calc(50% + .5px),transparent calc(50% + .5px)),linear-gradient(90deg,transparent calc(50% - .5px),rgba(200,60,40,.18) calc(50% - .5px),rgba(200,60,40,.18) calc(50% + .5px),transparent calc(50% + .5px))}
+.ckstd svg{width:130px;height:130px}
+.ckstd path{fill:#3a2e26}
+.ckstd path.mis{fill:#e0402c;animation:ckblink 1.2s ease-in-out infinite}
+@keyframes ckblink{50%{opacity:.35}}
+.ckstd .stdfont{font-size:110px;line-height:1;color:#3a2e26}
+.ckone{font-size:18px;margin:10px 0 2px;text-align:center}
+.ckone b{font-size:28px}
+.ckalt{font-size:20px}
+.ckpy{font-size:18px;line-height:1.5;color:var(--jade);font-weight:600;margin:4px 0}
+.ckvi{font-size:18px;line-height:1.5;margin:4px 0 10px}
+.ckwords{display:flex;flex-direction:column;gap:6px;margin:6px 0}
+.ckw{display:grid;grid-template-columns:auto auto 1fr auto;gap:4px 10px;align-items:baseline;padding:6px 10px;border-radius:12px;background:var(--card);border:1.5px solid var(--line)}
+.ckw .h{font-size:22px}
+.ckw .p{color:var(--jade);font-size:14px}
+.ckw .m{font-size:15px}
+.ckw.known{border-color:rgba(40,150,80,.45)}
+.ckw .tagd{font-size:12px;padding:1px 8px;border-radius:99px;background:var(--jade-soft);color:var(--ink)}
+.ckhist{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.ckh{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:2px;padding:8px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--card)}
+.ckh span{font-size:19px}
+.ckh small{font-size:13.5px;color:var(--muted)}
+:root[data-night] .ckcrop,:root[data-night] .ckstd{background-color:#f4efe6}
+@media (max-width:440px){
+  :root[data-art] .top nav button{border-width:0 9px!important;border-image-width:0 9px!important;padding:5px 2px!important;font-size:14px!important;min-width:0}
+  :root[data-art] .top .sync{display:none}
+  .top .brand .seal{flex:none}
+}
+@media (max-width:360px){:root[data-art] .top nav button{border-width:0 7px!important;border-image-width:0 7px!important;font-size:13px!important}}
+.ckw .m.mt{font-style:italic;color:var(--muted)}
+@media (max-width:440px){.ckcrop,.ckstd{width:128px!important;height:128px}.ckcrop{height:auto;max-height:128px}.ckstd svg{width:112px;height:112px}.ckpair{gap:8px}.ckdetail{padding:10px 8px}}
+
 /* màn chờ khi mở app */
 #splash{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;background-color:var(--paper);background-image:var(--art-bg,none);background-size:var(--art-bgsize,auto);transition:opacity .45s ease,visibility .45s}
 #splash.out{opacity:0;visibility:hidden}
@@ -793,7 +851,8 @@ input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;bac
   <nav aria-label="Trang">
     <button type="button" id="navHome">Hôm nay</button>
     <button type="button" id="navPr">Luyện tập</button>
-    <button type="button" id="navSet">Cài đặt</button>
+    <button type="button" id="navCk">Kiểm tra</button>
+    <button type="button" id="navSet" aria-label="Cài đặt"><span class="navg" aria-hidden="true">⚙&#xFE0E;</span><span class="navt">Cài đặt</span></button>
   </nav>
 </header>
 <div id="splash" role="status"><div class="sp-in">
@@ -1180,10 +1239,12 @@ function show(name, nodes){
   $('#navHome').setAttribute('aria-current', name === 'home' ? 'page' : 'false');
   $('#navSet').setAttribute('aria-current', name === 'set' ? 'page' : 'false');
   $('#navPr').setAttribute('aria-current', name === 'pr' ? 'page' : 'false');
+  $('#navCk').setAttribute('aria-current', name === 'ck' ? 'page' : 'false');
 }
 document.addEventListener('keydown', e => { if (!KEYS || e.metaKey || e.ctrlKey || e.altKey || (e.target && e.target.tagName === 'INPUT')) return; const f = KEYS[e.key]; if (f && e.key !== '_any') { e.preventDefault(); f(); } else if (KEYS._any && KEYS._any(e.key)) e.preventDefault(); });
 $('#navHome').addEventListener('click', () => { if (!Store.docs.meta) return; if (Session.on) Session.finish(); else viewHome(); });
 $('#navSet').addEventListener('click', () => { if (!Store.docs.meta) return; if (Session.on) Session.finish(true); viewSettings(); });
+$('#navCk').addEventListener('click', () => { if (!Store.docs.meta) return; if (Session.on) Session.finish(true); viewCheck(); });
 $('#navPr').addEventListener('click', () => { if (!Store.docs.meta) return; if (Session.on) Session.finish(true); viewPractice(); });
 
 /* ================= trang chính ================= */
@@ -2824,7 +2885,7 @@ const Ocr = {
       let best = 0, bp = -1; for (let c = 0; c < C; c++){ const v = P[s * C + c]; if (v > bp) { bp = v; best = c; } }
       if (best !== 0 && best !== prev){
         const top = []; for (let c = 1; c < C; c++){ const v = P[s * C + c]; if (v > 0.01) top.push([v, c]); } top.sort((a, b) => b[0] - a[0]);
-        chars.push({c:this.keys[best] || '', p:bp, cands:top.slice(0, 6).map(x => this.keys[x[1]])});
+        chars.push({c:this.keys[best] || '', p:bp, cands:top.slice(0, 6).map(x => this.keys[x[1]]), cp:top.slice(0, 6).map(x => x[0]), s, x:b.x + (s + 0.5) * imgW / T * (b.w / w)});
       }
       prev = best;
     }
@@ -3057,6 +3118,327 @@ const ScrollPad = (function(){
   } catch (e) {}
   return {upd:kick};
 })();
+
+/* =====================================================================
+   KIỂM TRA CHỮ VIẾT (24/11)
+   Chụp hoặc chọn ảnh câu, đoạn văn tự viết tay. App đọc chữ ngay trên máy (bộ đọc chữ dùng chung với bài chụp giấy),
+   tách từng chữ, so mỗi chữ với nét chuẩn để tìm nét có thể bị thiếu, đánh dấu chữ đọc chưa chắc, gợi ý chữ hợp nghĩa hơn
+   theo từ điển; rồi ghi pinyin, nghe, dịch sang tiếng Việt (cần mạng) và giải nghĩa từng từ.
+   ===================================================================== */
+const Ck = {
+  dict:null, dictP:null, pyP:null, trCache:{},
+  loadDict(){
+    if (this.dictP) return this.dictP;
+    this.dictP = fetch('data/tudien.txt').then(r => { if (!r.ok) throw new Error('từ điển'); return r.text(); }).then(t => {
+      const m = new Map(); t.split('\n').forEach(l => { const i = l.indexOf(':'); if (i < 0) return; const b = +l.slice(0, i); l.slice(i + 1).split(',').forEach(w => { if (w) m.set(w, b); }); });
+      V.items.forEach(it => { if (!m.has(it.h) && it.h.length <= 6 && hanChars(it.h).length === it.h.length) m.set(it.h, 14); });
+      this.dict = m; return m;
+    }).catch(e => { this.dictP = null; throw e; });
+    return this.dictP;
+  },
+  loadPy(){
+    if (window.pinyinPro) return Promise.resolve();
+    if (!this.pyP) this.pyP = new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'lib/pinyin-pro.js'; s.onload = res; s.onerror = () => { this.pyP = null; rej(new Error('pinyin')); }; document.head.appendChild(s); });
+    return this.pyP;
+  },
+  /* điểm một từ: log2 tần suất trừ tổng (giống cách tách từ của jieba); chữ lạ bị phạt nặng */
+  wscore(w){ const b = this.dict && this.dict.get(w); if (b != null) return b - 26; return w.length === 1 ? -32 : null; },
+  seg(text){
+    const n = text.length, best = new Float64Array(n + 1).fill(-1e9), from = new Int32Array(n + 1); best[0] = 0;
+    for (let i = 0; i < n; i++){ if (best[i] <= -1e9) continue;
+      if (!isHan(text[i])) { const v = best[i]; if (v > best[i + 1]) { best[i + 1] = v; from[i + 1] = i; } continue; }
+      for (let L = 1; L <= 4 && i + L <= n; L++){ const w = text.slice(i, i + L); if (L > 1 && !isHan(w[L - 1])) break; const sc = this.wscore(w); if (sc == null) continue; const v = best[i] + sc; if (v > best[i + L]) { best[i + L] = v; from[i + L] = i; } } }
+    const out = []; let j = n; while (j > 0) { const i = from[j]; out.unshift(text.slice(i, j)); j = i; }
+    return {words:out, score:best[n]};
+  },
+  pys(text){ try { return pinyinPro.pinyin(text, {type:'array', nonZh:'consecutive'}); } catch (e) { return []; } },
+  async translate(text){
+    text = text.trim(); if (!text) return ''; if (this.trCache[text]) return this.trCache[text];
+    const tries = [
+      async () => { const r = await fetch('https://api.mymemory.translated.net/get?langpair=zh-CN|vi&q=' + encodeURIComponent(text)); const j = await r.json(); if (j.responseStatus != 200 || !j.responseData || /MYMEMORY WARNING|QUOTA/i.test(j.responseData.translatedText)) throw 0; return j.responseData.translatedText; },
+      async () => { const r = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=zh-CN&tl=vi&dt=t&q=' + encodeURIComponent(text)); const j = await r.json(); return j[0].map(x => x[0]).join(''); }
+    ];
+    if (text.length > 450) tries.reverse();
+    for (const f of tries) { try { const v = await f(); if (v) { this.trCache[text] = v; return v; } } catch (e) {} }
+    throw new Error('dịch');
+  },
+  /* nghĩa từng từ ngoài sổ từ: dịch một lượt cả danh sách (mỗi từ một dòng) */
+  async gloss(ws){ const need = ws.filter(w => !(w in this.trCache)); if (need.length) { try { const t = await this.translate(need.join('\n')), parts = t.split('\n'); if (parts.length === need.length) need.forEach((w, i) => { this.trCache[w] = parts[i].trim(); }); } catch (e) {} } return ws.map(w => this.trCache[w] || ''); },
+  /* ---- ảnh: tách từng chữ trong một dòng ---- */
+  otsu(g){ const hst = new Float64Array(256); g.forEach(v => hst[v]++); const N = g.length; let sum = 0; for (let i = 0; i < 256; i++) sum += i * hst[i];
+    let sB = 0, wB = 0, best = 0, th = 128; for (let i = 0; i < 256; i++){ wB += hst[i]; if (!wB) continue; const wF = N - wB; if (!wF) break; sB += i * hst[i]; const mB = sB / wB, mF = (sum - sB) / wF, v = wB * wF * (mB - mF) * (mB - mF); if (v > best) { best = v; th = i; } } return th; },
+  lineInk(cv, b){
+    const x0 = Math.floor(b.x), y0 = Math.floor(b.y), W = Math.max(1, Math.ceil(b.w)), H = Math.max(1, Math.ceil(b.h));
+    const d = cv.getContext('2d').getImageData(x0, y0, W, H).data, g = new Uint8Array(W * H);
+    for (let i = 0; i < W * H; i++) g[i] = (d[i * 4] * 299 + d[i * 4 + 1] * 587 + d[i * 4 + 2] * 114) / 1000;
+    const th = Math.min(this.otsu(g), 200), ink = new Uint8Array(W * H); for (let i = 0; i < W * H; i++) ink[i] = g[i] < th ? 1 : 0;
+    return {x0, y0, W, H, ink};
+  },
+  splitLine(cv, line){
+    const L = this.lineInk(cv, line.box), {W, H, ink} = L, col = new Float64Array(W);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) col[x] += ink[y * W + x];
+    const xs = line.chars.map(c => Math.max(0, Math.min(W - 1, c.x - L.x0)));
+    let first = 0; while (first < W - 1 && col[first] === 0) first++; let last = W - 1; while (last > 0 && col[last] === 0) last--;
+    const cuts = [first];
+    for (let i = 0; i + 1 < xs.length; i++){ const a = xs[i], z = xs[i + 1], g = z - a, lo = Math.round(a + g * 0.25), hi = Math.round(z - g * 0.25);
+      let bx = Math.round((a + z) / 2), bv = Infinity; for (let x = lo; x <= hi; x++){ const v = col[x] + Math.abs(x - (a + z) / 2) * 0.02; if (v < bv) { bv = v; bx = x; } } cuts.push(bx); }
+    cuts.push(last + 1);
+    return line.chars.map((c, i) => {
+      const a = cuts[i], z = Math.max(a + 1, cuts[i + 1]); let y0 = H, y1 = -1, xa = z, xz = a - 1;
+      for (let y = 0; y < H; y++) for (let x = a; x < z; x++) if (ink[y * W + x]) { if (y < y0) y0 = y; if (y > y1) y1 = y; if (x < xa) xa = x; if (x > xz) xz = x; }
+      if (y1 < 0) { y0 = 0; y1 = H - 1; xa = a; xz = z - 1; }
+      return Object.assign(c, {bx:{x:L.x0 + xa, y:L.y0 + y0, w:xz - xa + 1, h:y1 - y0 + 1}, ink:{L, a:xa, z:xz + 1, y0, y1:y1 + 1}});
+    });
+  },
+  /* ---- so một chữ với nét chuẩn: tìm nét có thể bị thiếu ---- */
+  async strokeCheck(c, ch){
+    if (!isHan(ch)) return null; let d; try { d = await Strokes.get(ch); } catch (e) { d = null; } if (!d || !d.medians) return null;
+    const {L, a, z, y0, y1} = c.ink, bw = z - a, bh = y1 - y0; if (bw < 6 || bh < 6) return null;
+    const S = 64, k = S / Math.max(bw, bh), gw = Math.max(1, Math.round(bw * k)), gh = Math.max(1, Math.round(bh * k)), ox = (S - gw) >> 1, oy = (S - gh) >> 1, m = new Uint8Array(S * S);
+    for (let y = y0; y < y1; y++) for (let x = a; x < z; x++) if (L.ink[y * L.W + x]) { const X = ox + Math.min(gw - 1, Math.floor((x - a) * k)), Y = oy + Math.min(gh - 1, Math.floor((y - y0) * k)); m[Y * S + X] = 1; }
+    /* khoảng cách tới điểm mực gần nhất (biến đổi khoảng cách hai lượt) */
+    const D = new Float32Array(S * S); for (let i = 0; i < S * S; i++) D[i] = m[i] ? 0 : 1e6;
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++){ const i = y * S + x; if (x) D[i] = Math.min(D[i], D[i - 1] + 1); if (y) D[i] = Math.min(D[i], D[i - S] + 1); if (x && y) D[i] = Math.min(D[i], D[i - S - 1] + 1.41); if (y && x < S - 1) D[i] = Math.min(D[i], D[i - S + 1] + 1.41); }
+    for (let y = S - 1; y >= 0; y--) for (let x = S - 1; x >= 0; x--){ const i = y * S + x; if (x < S - 1) D[i] = Math.min(D[i], D[i + 1] + 1); if (y < S - 1) D[i] = Math.min(D[i], D[i + S] + 1); if (x < S - 1 && y < S - 1) D[i] = Math.min(D[i], D[i + S + 1] + 1.41); if (y < S - 1 && x) D[i] = Math.min(D[i], D[i + S - 1] + 1.41); }
+    /* các điểm dọc theo đường giữa của từng nét chuẩn, kèm hướng nét tại điểm đó */
+    const pts = d.medians.map(md => { const out = []; for (let i = 0; i + 1 < md.length; i++){ const [x1, y1_] = md[i], [x2, y2] = md[i + 1], L2 = Math.hypot(x2 - x1, y2 - y1_) || 1, n = Math.max(1, Math.round(L2 / 22)), ux = (x2 - x1) / L2, uy = -(y2 - y1_) / L2; for (let t = 0; t < n; t++) out.push([x1 + (x2 - x1) * t / n, 900 - (y1_ + (y2 - y1_) * t / n), ux, uy]); }
+      const l = md[md.length - 1], q = out[out.length - 1] || [0, 0, 1, 0]; out.push([l[0], 900 - l[1], q[2], q[3]]); return out; });
+    let gx0 = 1e9, gx1 = -1e9, gy0 = 1e9, gy1 = -1e9; pts.flat().forEach(([x, y]) => { gx0 = Math.min(gx0, x); gx1 = Math.max(gx1, x); gy0 = Math.min(gy0, y); gy1 = Math.max(gy1, y); });
+    /* khung chữ mẫu lấy theo đường viền nét (đúng bề dày nét), không theo đường giữa */
+    { let ax = 1e9, bx2 = -1e9, ay = 1e9, by = -1e9; d.strokes.forEach(sp => { const nums = sp.match(/-?\d+(\.\d+)?/g) || []; for (let i = 0; i + 1 < nums.length; i += 2){ const x = +nums[i], y = 900 - nums[i + 1]; if (x < ax) ax = x; if (x > bx2) bx2 = x; if (y < ay) ay = y; if (y > by) by = y; } });
+      if (bx2 > ax && by > ay) { gx0 = ax; gx1 = bx2; gy0 = ay; gy1 = by; } else { gx0 -= 45; gx1 += 45; gy0 -= 45; gy1 += 45; } }
+    const GW = gx1 - gx0, GH = gy1 - gy0;
+    const keep = GH < GW * 0.3 || GW < GH * 0.3; /* chữ dẹt (一) hay mảnh (丨): giữ tỉ lệ */
+    /* D2: khoảng cách tới mực chưa bị nét khác nhận */
+    const dt = mm => { const E = new Float32Array(S * S); for (let i = 0; i < S * S; i++) E[i] = mm[i] ? 0 : 1e6;
+      for (let y = 0; y < S; y++) for (let x = 0; x < S; x++){ const i = y * S + x; if (x) E[i] = Math.min(E[i], E[i - 1] + 1); if (y) E[i] = Math.min(E[i], E[i - S] + 1); if (x && y) E[i] = Math.min(E[i], E[i - S - 1] + 1.41); if (y && x < S - 1) E[i] = Math.min(E[i], E[i - S + 1] + 1.41); }
+      for (let y = S - 1; y >= 0; y--) for (let x = S - 1; x >= 0; x--){ const i = y * S + x; if (x < S - 1) E[i] = Math.min(E[i], E[i + 1] + 1); if (y < S - 1) E[i] = Math.min(E[i], E[i + S] + 1); if (x < S - 1 && y < S - 1) E[i] = Math.min(E[i], E[i + S + 1] + 1.41); if (y < S - 1 && x) E[i] = Math.min(E[i], E[i + S - 1] + 1.41); }
+      return E; };
+    const look = (E, X, Y) => { X = Math.round(X); Y = Math.round(Y); return X < 0 || Y < 0 || X >= S || Y >= S ? 1e6 : E[Y * S + X]; };
+    /* một điểm được tính là "có nét" khi có mực tại đó và cả hai phía dọc theo hướng nét (nét ngang cắt qua không làm nét dọc bị thiếu trông như có);
+       khi đã chia mực cho các nét khác, ít nhất một phía phải là mực chưa ai nhận (để nét thiếu không "mượn" nét song song bên cạnh) */
+    const TOL = 1.6, STEP = 4.5;
+    const place = (sx, sy, dx, dy) => { const kx = keep ? Math.max(gw, gh) / Math.max(GW, GH) : gw / GW, ky = keep ? kx : gh / GH, cx = ox + gw / 2 + dx, cy = oy + gh / 2 + dy, gcx = gx0 + GW / 2, gcy = gy0 + GH / 2;
+      return pts.map(ps => ps.map(([x, y, ux, uy]) => [cx + (x - gcx) * kx * sx, cy + (y - gcy) * ky * sy, ux, uy])); };
+    /* hai điểm hai bên lấy ngay trên đường giữa của nét (cách khoảng STEP), nên nét cong, nét móc, nét gập vẫn đúng hướng */
+    const KS = Math.max(1, Math.round(STEP / Math.max(0.5, 22 * Math.min(gw / GW, gh / GH))));
+    const covAt = (ps, ex, ey, E2) => { let ok = 0; ps.forEach(([X, Y], i) => { X += ex; Y += ey; const pa = ps[Math.min(ps.length - 1, i + KS)], pb = ps[Math.max(0, i - KS)], a1 = [pa[0] + ex, pa[1] + ey], b1 = [pb[0] + ex, pb[1] + ey];
+      if (look(D, X, Y) > TOL || look(D, a1[0], a1[1]) > TOL + 0.6 || look(D, b1[0], b1[1]) > TOL + 0.6) return;
+      if (E2 && look(E2, X, Y) > TOL + 0.6 && look(E2, a1[0], a1[1]) > TOL + 0.6 && look(E2, b1[0], b1[1]) > TOL + 0.6) return; ok++; }); return ok / ps.length; };
+    const near = (ps, r) => { const best2 = [0, 0, -1]; for (let ex = -r; ex <= r; ex += 2) for (let ey = -r; ey <= r; ey += 2) { const v = covAt(ps, ex, ey, null) - 0.01 * (Math.abs(ex) + Math.abs(ey)); if (v > best2[2]) { best2[0] = ex; best2[1] = ey; best2[2] = v; } } return best2; };
+    /* 1) căn cả chữ */
+    let P0 = null, bv = -1;
+    const robust = cs => { const q = cs.slice().sort((x, y) => y - x), k2 = Math.max(1, Math.ceil(q.length * 0.75)); return q.slice(0, k2).reduce((s2, x) => s2 + x, 0) / k2; };
+    const pen = (sx, sy, dx, dy) => 0.12 * (Math.abs(sx - 1) + Math.abs(sy - 1)) + 0.004 * (Math.abs(dx) + Math.abs(dy));
+    let g0 = [1, 1, 0, 0];
+    for (const sx of [0.8, 0.9, 1, 1.12, 1.25]) for (const sy of [0.8, 0.9, 1, 1.12, 1.25]) for (const dx of [-8, -4, 0, 4, 8]) for (const dy of [-8, -4, 0, 4, 8]){
+      const P1 = place(sx, sy, dx, dy), v = robust(P1.map(ps => near(ps, 2)[2])) - pen(sx, sy, dx, dy); if (v > bv) { bv = v; P0 = P1; g0 = [sx, sy, dx, dy]; } }
+    /* tinh chỉnh quanh chỗ tốt nhất */
+    for (const fs of [0.95, 1, 1.05]) for (const ft of [0.95, 1, 1.05]) for (const ex of [-2, 0, 2]) for (const ey of [-2, 0, 2]){
+      const q = [g0[0] * fs, g0[1] * ft, g0[2] + ex, g0[3] + ey], P1 = place(...q), v = robust(P1.map(ps => near(ps, 2)[2])) - pen(...q); if (v > bv + 1e-9) { bv = v; P0 = P1; g0 = q; } }
+    bv = Math.min(1, bv + pen(...g0));
+    /* 2) chia mực cho từng nét: nét khớp rõ nhất nhận mực trước */
+    const used = new Uint8Array(S * S), order = P0.map((ps, i) => [covAt(ps, 0, 0, null), i]).sort((a2, b2) => b2[0] - a2[0]).map(x => x[1]), best = new Array(P0.length).fill(0);
+    for (const si of order){
+      const free = new Uint8Array(S * S); for (let i = 0; i < S * S; i++) free[i] = m[i] && !used[i] ? 1 : 0; const E2 = dt(free);
+      let bb = -1, be = [0, 0]; for (let ex = -7; ex <= 7; ex += 1.75) for (let ey = -7; ey <= 7; ey += 1.75) { const v = covAt(P0[si], ex, ey, E2) - 0.012 * (Math.abs(ex) + Math.abs(ey)); if (v > bb) { bb = v; be = [ex, ey]; } }
+      best[si] = Math.max(0, bb + 0.012 * (Math.abs(be[0]) + Math.abs(be[1])) * 0.5);
+      if (bb > 0.3) P0[si].forEach(([X, Y]) => { X = Math.round(X + be[0]); Y = Math.round(Y + be[1]); for (let yy = -2; yy <= 2; yy++) for (let xx = -2; xx <= 2; xx++){ const x2 = X + xx, y2 = Y + yy; if (x2 >= 0 && y2 >= 0 && x2 < S && y2 < S && m[y2 * S + x2]) used[y2 * S + x2] = 1; } });
+    }
+    const miss = best.map((x, i) => x < 0.34 ? i : -1).filter(i => i >= 0);
+    const rest = best.filter((x, i) => miss.indexOf(i) < 0), fitRest = rest.length ? rest.reduce((s2, x) => s2 + x, 0) / rest.length : 0;
+    if (window.__ckdbg) window.__ckdbg.push({ch, m:Array.from(m), used:Array.from(used), P0, best});
+    return {fit:bv, fitRest, cov:best, miss, n:d.medians.length, data:d};
+  },
+  /* chữ dễ thay hơn theo từ điển: thử các ứng viên đọc được, chọn cái làm câu hợp nghĩa hơn rõ rệt */
+  suggest(text, chars){
+    if (!this.dict) return [];
+    const base = this.seg(text).score, out = [];
+    chars.forEach((c, i) => {
+      if (!isHan(c.c) || !c.cands) return; let bestC = null, gain = 0;
+      c.cands.forEach((k, j) => { if (k === c.c || !isHan(k)) return; const pc = (c.cp && c.cp[j]) || 0; if (pc < 0.02) return;
+        const t2 = text.slice(0, i) + k + text.slice(i + 1), g = this.seg(t2).score - base + Math.log2(pc / Math.max(0.01, c.p)); if (g > gain) { gain = g; bestC = k; } });
+      if (bestC && gain >= 5) out.push({i, from:c.c, to:bestC, gain});
+    });
+    return out;
+  },
+  /* dấu câu viết tay hay bị đọc thành chữ số, chữ cái: 0 → 。, , → ， */
+  fixPunct(cs){ const P2 = '，。！？、；：“”（）', map = {'0':'。', 'o':'。', 'O':'。', '°':'。', '.':'。', ',':'，', '!':'！', '?':'？', ';':'；', ':':'：'};
+    cs.forEach((c, i) => { if (isHan(c.c)) return; const k = (c.cands || []).find(x => P2.indexOf(x) >= 0); if (k) c.c = k; else if (map[c.c] && (i === cs.length - 1 || i > 0)) c.c = map[c.c]; }); },
+  /* bộ đọc chữ đôi khi đọc một chữ thành hai lần liền nhau: hai ô hẹp cùng một chữ thì gộp lại */
+  mergeDup(l){ const ws = l.chars.filter(c => isHan(c.c) && c.bx).map(c => c.bx.w).sort((a, b) => a - b), med = ws.length ? ws[ws.length >> 1] : 0; if (!med) return;
+    for (let i = l.chars.length - 2; i >= 0; i--){ const a = l.chars[i], b = l.chars[i + 1]; if (a.c !== b.c || !a.bx || !b.bx) continue;
+      if (a.bx.w < med * 0.7 || b.bx.w < med * 0.7) { const x0 = Math.min(a.bx.x, b.bx.x), y0 = Math.min(a.bx.y, b.bx.y), x1 = Math.max(a.bx.x + a.bx.w, b.bx.x + b.bx.w), y1 = Math.max(a.bx.y + a.bx.h, b.bx.y + b.bx.h);
+        a.bx = {x:x0, y:y0, w:x1 - x0, h:y1 - y0}; a.ink = {L:a.ink.L, a:Math.min(a.ink.a, b.ink.a), z:Math.max(a.ink.z, b.ink.z), y0:Math.min(a.ink.y0, b.ink.y0), y1:Math.max(a.ink.y1, b.ink.y1)}; a.p = Math.max(a.p, b.p); l.chars.splice(i + 1, 1); } } },
+  hist(){ const m = META(); return (m.ck = m.ck || []); },
+  remember(text, vi){ const a = this.hist(); const i = a.findIndex(x => x.t === text); if (i >= 0) a.splice(i, 1); a.unshift({t:text, vi:vi || '', d:Date.now()}); a.length = Math.min(a.length, 20); Store.mark('meta'); }
+};
+
+function viewCheck(){
+  const cam = h('input', {type:'file', accept:'image/*', capture:'environment', hidden:true}), lib = h('input', {type:'file', accept:'image/*', hidden:true});
+  const status = h('p', {class:'muted', role:'status'}), out = h('div', {class:'ckout'});
+  const refIn = h('input', {type:'text', class:'sel ckref', lang:'zh-Hans', placeholder:'Ví dụ: 我明天去北京', autocomplete:'off', autocapitalize:'off', spellcheck:'false'});
+  const typeIn = h('textarea', {class:'sel cktype', lang:'zh-Hans', rows:3, placeholder:'Gõ hoặc dán câu tiếng Trung để xem pinyin và bản dịch'});
+  const art = artNow() || 'gom', mimg = h('img', {class:'primg', alt:'', src:'skin/' + art + '/pr-viet.webp'}); mimg.onerror = () => { mimg.onerror = null; mimg.src = 'skin/' + art + '/m-but.webp'; };
+  let busy = false;
+  const run = async f => {
+    if (busy) return; busy = true; out.textContent = '';
+    try {
+      status.textContent = 'Đang chuẩn bị bộ đọc chữ…';
+      await Ocr.load(p => { status.textContent = 'Đang tải bộ đọc chữ, chỉ lần đầu (khoảng 25 MB): ' + p + '%'; });
+      status.textContent = 'Đang đọc chữ trong ảnh…'; const t1 = Date.now();
+      const [r] = await Promise.all([Ocr.read(f), Ck.loadDict().catch(() => null), Ck.loadPy().catch(() => null)]);
+      const lines = r.lines.map(l => ({box:l.box, chars:l.chars.filter(c => c.c && c.c !== ' ')})).filter(l => l.chars.length);
+      if (!lines.some(l => l.chars.some(c => isHan(c.c) || c.cands.some(isHan)))) { status.textContent = 'Không thấy chữ Hán nào trong ảnh. Chụp gần hơn, chữ to, đậm và đủ sáng rồi thử lại.'; busy = false; return; }
+      status.textContent = 'Đang so từng chữ với nét chuẩn…';
+      lines.forEach(l => { Ck.fixPunct(l.chars); Ck.splitLine(r.canvas, l); Ck.mergeDup(l); });
+      const chars = lines.flatMap((l, li) => l.chars.map(c => Object.assign(c, {line:li})));
+      status.textContent = '';
+      await showResult({canvas:r.canvas, lines, chars, ms:Date.now() - t1});
+    } catch (e) { status.textContent = 'Chưa đọc được ảnh (' + ((e && e.message) || e) + '). Thử chụp lại.'; }
+    busy = false;
+  };
+  cam.onchange = lib.onchange = e => { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) run(f); };
+  let lastR = null;
+  refIn.addEventListener('change', () => { if (lastR && !busy) { out.textContent = ''; showResult(lastR); } });
+  refIn.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); refIn.blur(); } });
+
+  /* ---------- hiện kết quả ---------- */
+  async function showResult(R){
+    lastR = R;
+    const chars = R ? R.chars : typeIn.value.trim().split('').filter(c => c.trim()).map(c => ({c, p:1, cands:[c], cp:[1]}));
+    const text = () => chars.map(c => c.c).join('');
+    const ref = refIn.value.replace(/\s+/g, '');
+    const refAl = R && ref ? paperAlign(hanChars(ref), chars.filter(c => isHan(c.c) || c.cands.some(isHan))) : null;
+    /* chấm từng chữ */
+    const hanList = chars.filter(c => isHan(c.c) || c.cands.some(isHan));
+    if (R) for (const c of hanList) { if (!c.sc || c.scFor !== c.c) { c.sc = await Ck.strokeCheck(c, c.c); c.scFor = c.c; } }
+    /* có câu định viết: chữ viết thành chữ khác thì so với chữ đúng để chỉ ra nét thiếu */
+    hanList.forEach(c => { c.exp = null; c.scExp = null; });
+    if (refAl) { const exp = hanChars(ref); for (let j = 0; j < exp.length; j++){ const gi = refAl.at[j]; if (gi < 0) continue; const g = hanList[gi]; if (g.c !== exp[j]) { g.exp = exp[j]; g.scExp = await Ck.strokeCheck(g, exp[j]); } } }
+    const sugg = R ? Ck.suggest(text(), chars) : [];
+    const verdictOf = c => {
+      if (!isHan(c.c)) return 'punct';
+      if (c.exp && c.exp !== c.c) return 'bad';
+      if (c.fix) return 'ok';
+      if (c.sc && c.sc.miss.length && c.sc.fitRest > 0.72 && c.sc.miss.length <= Math.max(1, Math.floor(c.sc.n / 4))) return 'bad';
+      if (c.p < 0.6 || sugg.some(s => chars[s.i] === c)) return 'warn';
+      if (c.sc && (c.sc.fit < 0.5 || c.sc.miss.length)) return 'warn';
+      return 'ok';
+    };
+    const lab = {ok:'Rõ', warn:'Chưa chắc', bad:'Có thể thiếu nét'};
+    const detail = h('div', {class:'ckdetail', hidden:true});
+    const chipsBox = h('div', {class:'ckchips', lang:'zh-Hans'});
+    const pyLine = h('p', {class:'ckpy'}), viLine = h('p', {class:'ckvi'}), words = h('div', {class:'ckwords'}), sumLine = h('p', {class:'verdict'});
+    const pic = R ? h('canvas', {class:'ckpic'}) : null;
+    let sel = -1;
+    const paintPic = () => {
+      if (!pic) return; const cv = R.canvas, k = Math.min(1, 900 / cv.width); pic.width = Math.round(cv.width * k); pic.height = Math.round(cv.height * k);
+      const g = pic.getContext('2d'); g.drawImage(cv, 0, 0, pic.width, pic.height);
+      chars.forEach((c, i) => { if (!c.bx) return; const v = verdictOf(c); if (v === 'punct') return; g.lineWidth = i === sel ? 4 : 2.5; g.strokeStyle = v === 'ok' ? 'rgba(40,150,80,.9)' : v === 'warn' ? 'rgba(220,150,20,.95)' : 'rgba(210,50,40,.95)'; g.strokeRect(c.bx.x * k - 3, c.bx.y * k - 3, c.bx.w * k + 6, c.bx.h * k + 6); });
+    };
+    const paintAll = () => {
+      const t = text(), py = window.pinyinPro ? Ck.pys(t) : [];
+      chipsBox.textContent = '';
+      chars.forEach((c, i) => {
+        const v = verdictOf(c);
+        if (v === 'punct') { chipsBox.appendChild(h('span', {class:'ckpun'}, c.c)); return; }
+        chipsBox.appendChild(h('button', {type:'button', class:'ckc ' + v + (i === sel ? ' on' : ''), 'aria-label':c.c + ', ' + lab[v], onclick:() => openDetail(i)}, h('small', null, py[i] || ''), h('span', null, c.c)));
+      });
+      const cnt = {ok:0, warn:0, bad:0}; chars.forEach(c => { const v = verdictOf(c); if (cnt[v] != null) cnt[v]++; });
+      const n = cnt.ok + cnt.warn + cnt.bad;
+      sumLine.className = 'verdict ' + (cnt.bad ? 'bad' : cnt.warn ? 'warn' : 'ok');
+      sumLine.textContent = !R ? 'Câu bạn gõ: ' + n + ' chữ.' : cnt.bad + cnt.warn === 0 ? 'Đọc được ' + n + ' chữ, chữ nào cũng rõ và đủ nét.' : 'Đọc được ' + n + ' chữ: ' + cnt.ok + ' rõ' + (cnt.warn ? ', ' + cnt.warn + ' chưa chắc' : '') + (cnt.bad ? ', ' + cnt.bad + ' có thể thiếu nét' : '') + '. Bấm vào chữ màu để xem kỹ.';
+      pyLine.textContent = window.pinyinPro ? py.filter(x => x).join(' ').replace(/ ([，。！？、；：,.!?])/g, '$1') : '';
+      paintPic(); paintWords(); paintRef();
+    };
+    const paintWords = () => {
+      words.textContent = ''; if (!Ck.dict) return;
+      const ws = Ck.seg(text()).words.filter(w => [...w].some(isHan));
+      const miss = [];
+      ws.forEach(w => { const it = V.byH[w], py = window.pinyinPro ? Ck.pys(w).join(' ') : '', mEl = h('span', {class:'m mean'}, it ? it.m : '…');
+        if (!it) miss.push([w, mEl]);
+        words.appendChild(h('div', {class:'ckw' + (it ? ' known' : '')}, h('span', {class:'h', lang:'zh-Hans'}, w), h('span', {class:'p'}, py), mEl, it && P('m')[it.h] ? h('span', {class:'tagd'}, 'đã học') : null)); });
+      if (miss.length) Ck.gloss(Array.from(new Set(miss.map(x => x[0])))).then(() => miss.forEach(([w, el]) => { const g = Ck.trCache[w]; el.textContent = g || '—'; if (g) el.classList.add('mt'); }));
+    };
+    const refBox = h('div', {class:'ckrefres'});
+    const paintRef = () => {
+      refBox.textContent = ''; if (!refAl) return;
+      const exp = hanChars(ref), got = chars.filter(c => isHan(c.c) || c.cands.some(isHan)), al = paperAlign(exp, got);
+      const good = al.st.filter(s2 => s2 === 'ok').length;
+      refBox.append(h('p', {class:'verdict ' + (good === exp.length ? 'ok' : 'warn')}, 'So với câu định viết: đúng ' + good + ' / ' + exp.length + ' chữ'),
+        h('div', {class:'paperchars', lang:'zh-Hans'}, exp.map((c, j) => h('span', {class:'pc ' + (al.st[j] === 'ok' ? 'ok' : al.st[j] === 'near' ? 'near' : 'bad'), title:al.st[j] === 'miss' ? 'Thiếu chữ này' : al.st[j] === 'wrong' ? 'Viết thành chữ khác' : ''}, c))),
+        h('p', {class:'fine'}, 'Xanh: đúng. Vàng: gần đúng. Đỏ: thiếu chữ hoặc viết thành chữ khác.'));
+    };
+    /* bản dịch: chờ người dùng sửa xong mới dịch lại */
+    let trT = 0, trFor = '';
+    const doTr = () => { clearTimeout(trT); trT = setTimeout(async () => { const t = text().trim(); if (!t || t === trFor) return; trFor = t; viLine.textContent = 'Đang dịch…'; viLine.classList.add('muted');
+      try { const vi = await Ck.translate(t); if (trFor !== t) return; viLine.textContent = vi; viLine.classList.remove('muted'); Ck.remember(t, vi); }
+      catch (e) { viLine.textContent = navigator.onLine === false ? 'Cần mạng để dịch. Pinyin và nghĩa từng từ bên dưới vẫn xem được.' : 'Chưa dịch được lúc này, thử lại sau.'; Ck.remember(t, ''); } }, 500); };
+    /* ---- xem kỹ một chữ ---- */
+    async function openDetail(i){
+      sel = i; const c = chars[i]; paintAll(); detail.hidden = false; detail.textContent = '';
+      const v = verdictOf(c), py = window.pinyinPro ? Ck.pys(c.c)[0] : '';
+      const crop = h('canvas', {class:'ckcrop'});
+      if (R && c.bx) { const p = 8, sx = Math.max(0, c.bx.x - p), sy = Math.max(0, c.bx.y - p), sw = Math.min(R.canvas.width - sx, c.bx.w + 2 * p), sh = Math.min(R.canvas.height - sy, c.bx.h + 2 * p), K = 150 / Math.max(sw, sh); crop.width = Math.round(sw * K); crop.height = Math.round(sh * K); crop.getContext('2d').drawImage(R.canvas, sx, sy, sw, sh, 0, 0, crop.width, crop.height); }
+      const tgt = c.exp && c.exp !== c.c ? c.exp : c.c, tsc = tgt === c.c ? c.sc : c.scExp;
+      let std = null; try { std = await Strokes.get(tgt); } catch (e) {}
+      const stdBox = h('div', {class:'ckstd'});
+      if (std) { const miss = (tsc && v === 'bad' && tsc.miss.length <= Math.max(1, Math.floor(tsc.n / 3))) ? tsc.miss : []; stdBox.innerHTML = '<svg viewBox="0 0 1024 1024" aria-hidden="true"><g transform="scale(1,-1) translate(0,-900)">' + std.strokes.map((s2, j) => '<path d="' + s2 + '" class="' + (miss.indexOf(j) >= 0 ? 'mis' : '') + '"></path>').join('') + '</g></svg>'; }
+      else stdBox.append(h('span', {lang:'zh-Hans', class:'stdfont'}, tgt));
+      const tpy = window.pinyinPro ? Ck.pys(tgt)[0] : '';
+      const missTxt = tsc && tsc.miss.length && tsc.miss.length <= Math.max(1, Math.floor(tsc.n / 3)) ? 'Nét tô đỏ ở chữ mẫu có thể bị thiếu hoặc lệch nhiều trong chữ của bạn (nét thứ ' + tsc.miss.map(j => j + 1).join(', ') + ' trên ' + tsc.n + ' nét).' : '';
+      const why = !R ? '' : tgt !== c.c ? 'Bạn định viết ' + tgt + ' (' + tpy + ') nhưng app đọc chữ của bạn thành ' + c.c + '. ' + (missTxt || 'So nét với chữ mẫu bên phải nhé.') :
+        v === 'bad' ? missTxt + ' Nhìn lại chữ của bạn bên trái nhé.' :
+        v === 'warn' ? (sugg.find(s2 => chars[s2.i] === c) ? 'Chữ này đọc ra hơi lạ trong câu. Có thể bạn định viết chữ khác bên dưới.' : 'App đọc chữ này chưa chắc chắn: nét có thể chưa rõ, dính nhau hoặc sai một phần.') :
+        'Chữ rõ, đủ nét so với chữ mẫu.';
+      const cands = (c.cands || []).filter(k => isHan(k) && k !== c.c).slice(0, 5);
+      const sg = sugg.find(s2 => chars[s2.i] === c);
+      if (sg && cands.indexOf(sg.to) > 0) { cands.splice(cands.indexOf(sg.to), 1); cands.unshift(sg.to); }
+      const it = V.byH[c.c];
+      detail.append(
+        h('div', {class:'ckpair'}, R ? h('figure', null, crop, h('figcaption', null, 'Chữ bạn viết')) : null, h('figure', null, stdBox, h('figcaption', null, 'Chữ mẫu ' + tgt + (std ? ' · ' + std.medians.length + ' nét' : '')))),
+        tgt !== c.c ? h('p', {class:'ckone'}, 'App đọc: ', h('b', {lang:'zh-Hans'}, c.c), ' → định viết: ', h('b', {lang:'zh-Hans'}, tgt), ' ', tpy, V.byH[tgt] ? h('span', {class:'mean'}, ' · ' + V.byH[tgt].m) : null)
+          : h('p', {class:'ckone'}, h('b', {lang:'zh-Hans'}, c.c), ' ', py, it ? h('span', {class:'mean'}, ' · ' + it.m) : null),
+        why ? h('p', {class:'fine'}, why) : null,
+        h('div', {class:'row'}, std ? demoBtn(tgt) : null, h('button', {type:'button', class:'btn small', onclick:() => speak(tgt, 0.8)}, 'Nghe')),
+        R && cands.length ? h('div', null, h('p', {class:'fine'}, (c.fix ? 'Đã chọn. ' : '') + 'App đọc nhầm hoặc bạn định viết chữ khác? Bấm để đổi:'),
+          h('div', {class:'row', lang:'zh-Hans'}, cands.map(k => h('button', {type:'button', class:'btn ckalt' + (sg && sg.to === k ? ' primary' : ''), onclick:() => { c.c = k; c.fix = true; c.sc = null; openDetail(i); doTr(); }}, k + (window.pinyinPro ? ' ' + Ck.pys(k)[0] : ''))),
+          h('button', {type:'button', class:'btn small ghost', onclick:() => { c.fix = true; openDetail(i); }}, 'Chữ này đúng rồi'))) : null,
+        h('div', {class:'center'}, h('button', {type:'button', class:'btn small ghost', onclick:() => { sel = -1; detail.hidden = true; paintAll(); }}, 'Đóng')));
+      detail.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
+    const t0 = text();
+    out.append(
+      h('section', {class:'panel'}, h('h2', null, R ? 'App đọc được' : 'Câu của bạn'), sumLine, chipsBox,
+        R ? h('p', {class:'fine'}, 'Xanh: rõ. Vàng: chưa chắc. Đỏ: có thể thiếu nét. Bấm một chữ để so với chữ mẫu, xem thứ tự nét hoặc sửa chữ app đọc nhầm.') : null,
+        detail, refBox, pic,
+        R ? h('small', {class:'fine'}, 'Đọc trong ' + (R.ms / 1000).toFixed(1) + ' giây, ngay trên máy.') : null),
+      h('section', {class:'panel'}, h('h2', null, 'Pinyin và nghĩa'), pyLine, viLine,
+        h('div', {class:'row'}, h('button', {type:'button', class:'listen', onclick:() => speak(text(), 0.85)}, 'Nghe câu'), h('button', {type:'button', class:'btn ghost', onclick:() => speak(text(), 0.6)}, 'Nghe chậm'),
+          h('button', {type:'button', class:'btn small', onclick:async e => { try { await navigator.clipboard.writeText(text() + '\n' + pyLine.textContent + '\n' + viLine.textContent); e.currentTarget.textContent = 'Đã chép'; } catch (x) {} }}, 'Sao chép')),
+        h('h3', null, 'Từng từ'), words, h('small', {class:'fine'}, 'Từ có viền xanh lấy nghĩa từ sổ từ của lớp. Nghĩa in nghiêng và bản dịch cả câu là dịch máy trên mạng, chỉ để tham khảo.')),
+      h('div', {class:'row', style:'justify-content:center'}, h('button', {type:'button', class:'btn primary', onclick:() => cam.click()}, 'Chụp bài khác'), h('button', {type:'button', class:'btn', onclick:() => lib.click()}, 'Chọn ảnh khác')));
+    paintAll(); doTr();
+    if (R) FX.answer(!chars.some(c => verdictOf(c) === 'bad'));
+    setTimeout(() => out.scrollIntoView({behavior:'smooth', block:'start'}), 60);
+    void t0;
+  }
+  const typeGo = async () => { if (!typeIn.value.trim()) return; out.textContent = ''; status.textContent = 'Đang chuẩn bị…'; try { await Promise.all([Ck.loadDict().catch(() => null), Ck.loadPy().catch(() => null)]); } catch (e) {} status.textContent = ''; showResult(null); };
+  const hist = Ck.hist();
+  show('ck', [
+    h('div', {class:'prhead'}, mimg, h('div', null, h('h1', null, 'Kiểm tra chữ viết'), h('p', {class:'muted'}, 'Chụp câu hoặc đoạn văn bạn tự viết tay. App đọc từng chữ, đánh dấu chữ chưa rõ hoặc có thể thiếu nét, ghi pinyin và dịch sang tiếng Việt.'))),
+    h('section', {class:'panel'},
+      h('div', {class:'ckbig'}, h('button', {type:'button', class:'btn primary big', onclick:() => { Snd.unlock(); FX.unlock(); cam.click(); }}, 'Chụp ảnh'), h('button', {type:'button', class:'btn big', onclick:() => lib.click()}, 'Chọn ảnh có sẵn')),
+      h('p', {class:'fine'}, 'Viết bằng bút đậm, chữ to, viết ngang. Chụp thẳng từ trên xuống, đủ sáng, chỉ lấy phần có chữ. Ảnh không gửi đi đâu.'),
+      h('details', {class:'ckopt'}, h('summary', null, 'So với câu bạn định viết (không bắt buộc)'), h('p', {class:'fine'}, 'Gõ câu đúng trước khi chụp, app sẽ chỉ ra chữ thiếu hoặc viết thành chữ khác.'), refIn),
+      cam, lib, status),
+    out,
+    h('details', {class:'panel ckopt'}, h('summary', null, 'Gõ câu thay vì chụp'), typeIn, h('div', {class:'row'}, h('button', {type:'button', class:'btn', onclick:typeGo}, 'Xem pinyin và bản dịch'))),
+    hist.length ? h('details', {class:'panel ckopt'}, h('summary', null, 'Đã kiểm tra gần đây (' + hist.length + ')'),
+      h('div', {class:'ckhist'}, hist.map(x => h('button', {type:'button', class:'ckh', onclick:() => { typeIn.value = x.t; typeGo(); }}, h('span', {lang:'zh-Hans'}, x.t), x.vi ? h('small', {class:'mean'}, x.vi) : null)))) : null
+  ]);
+}
 
 
 /* ================= phiên học ================= */
@@ -3295,7 +3677,7 @@ async function boot(){
     show('err', [h('h1', null, 'Chưa mở được sổ'), h('p', {class:'muted'}, 'Không đọc được dữ liệu (' + ((e && (e.code || e.message)) || 'lỗi') + '). Tiến độ của anh không bị ghi đè. Kiểm tra mạng rồi thử lại.'), h('div', {class:'row'}, h('button', {type:'button', class:'btn primary big', onclick:() => { view().textContent = ''; view().appendChild(h('p', {class:'muted', id:'bootmsg'}, 'Đang mở sổ…')); boot(); }}, 'Thử lại'))]);
   }
 }
-window.__app = {FX, Ocr, paperAlign, viewBlitz, blitzPool, Session, exOrder, exMCQ, exType, exTones, exFlip, exIntro, exWrite, show, h, sentProgress, startSent, SENTS:() => SENTS, exSent, sentAlign, exTones, Cloud, Ink, exFree, practiceGen, readySents, SET, viewPractice, viewSettings, Store, V, Session, Strokes, Snd, segment, grade, stats, P, META, viewHome, viewPlacement, viewPlaceGroups, applyPlacement, items, newQueue, dueList, unplaced};
+window.__app = {FX, Ocr, Ck, viewCheck, paperAlign, viewBlitz, blitzPool, Session, exOrder, exMCQ, exType, exTones, exFlip, exIntro, exWrite, show, h, sentProgress, startSent, SENTS:() => SENTS, exSent, sentAlign, exTones, Cloud, Ink, exFree, practiceGen, readySents, SET, viewPractice, viewSettings, Store, V, Session, Strokes, Snd, segment, grade, stats, P, META, viewHome, viewPlacement, viewPlaceGroups, applyPlacement, items, newQueue, dueList, unplaced};
 boot();
 })();
 </script>
