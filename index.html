@@ -843,7 +843,7 @@ input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;bac
 .bohead{display:flex;gap:10px;align-items:center}
 .bohead small{display:block;color:var(--muted);font-size:13.5px;margin-top:2px}
 .bochips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.bochip{display:inline-flex;flex-direction:column;align-items:center;min-width:52px;padding:4px 6px 5px;border-radius:12px;background:var(--card);border:1.5px solid var(--line)}
+.bochip{font:inherit;color:inherit;cursor:pointer;display:inline-flex;flex-direction:column;align-items:center;min-width:52px;padding:4px 6px 5px;border-radius:12px;background:var(--card);border:1.5px solid var(--line)}
 .bochip b{font-size:24px;font-weight:400;line-height:1.15}
 .bochip small{font-size:11.5px;color:var(--muted);line-height:1.2;max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bochip small.mean{color:var(--ink)}
@@ -874,6 +874,9 @@ input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;bac
 .boresult{text-align:center}
 .bobig{font-size:44px;font-weight:800;margin:4px 0;color:var(--h-ink,var(--ink))}
 @media (max-width:380px){.boadvrow{grid-template-columns:1fr}}
+.bochip:active{transform:translateY(1px)}
+:root[data-art] button.bochip{border-image:none!important;border:1.5px solid var(--line)!important;padding:4px 6px 5px!important;background:var(--card)!important;box-shadow:none!important;min-height:0}
+:root[data-art] button.bochip::before{display:none!important}
 
 /* màn chờ khi mở app */
 #splash{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;background-color:var(--paper);background-image:var(--art-bg,none);background-size:var(--art-bgsize,auto);transition:opacity .45s ease,visibility .45s}
@@ -1296,6 +1299,7 @@ $('#navPr').addEventListener('click', () => { if (!Store.docs.meta) return; if (
 
 /* ================= trang chính ================= */
 function viewHome(){
+  try { applyNames(); } catch (e) {}
   migrateKeys();
   const st = stats(), set = SET(), up = unplaced(), nq = newQueue(), L = todayLog();
   const capLeft = Math.max(0, set.nd - (L.nw || 0)), newNow = Math.min(nq.length, capLeft);
@@ -1593,10 +1597,14 @@ function exWrite(ex, api){
 }
 
 /* ================= câu mẫu ================= */
-let SENTS = [];
+let SENTS = [], SENTS_ALL = [];
 async function loadSents(){
-  try { const r = await fetch('data/sentences.json'); if (r.ok) SENTS = (await r.json()).map(s => Object.assign(s, {h:s.t.join('')})); } catch (e) {}
+  try { const r = await fetch('data/sentences.json'); if (r.ok) SENTS_ALL = (await r.json()).map(s => Object.assign(s, {h:s.t.join('')})); } catch (e) {}
+  applyNames();
 }
+/* tắt "Học tên riêng" thì bỏ hẳn tên riêng: không ra trong từ, trong đáp án nhiễu, và bỏ cả các câu có tên riêng */
+function isNameWord(t){ const it = V.byH[t]; return !!(it && it.g === 'Tên riêng'); }
+function applyNames(){ const on = SET().names; SENTS = on ? SENTS_ALL.slice() : SENTS_ALL.filter(x => !x.t.some(isNameWord)); }
 function learnedChar(c){ return (V.charWords[c] || []).some(it => P('m')[it.h]); }
 function readySents(){ return SENTS.filter(s => hanChars(s.h).every(learnedChar)); }
 function speak(text, rate){
@@ -3659,7 +3667,7 @@ const Bo = {
   learned(){
     const m = P('m'), out = new Map();
     items().forEach(it => { if (!m[it.h] || !enabled(it)) return; it.chars.forEach((c, i) => { if (!out.has(c) && this.d && this.d[c]) out.set(c, {c, it, i}); }); });
-    out.forEach((x, c) => { const single = V.byH[c]; if (single && m[c]) x.it = single, x.i = 0; });
+    out.forEach((x, c) => { const single = V.byH[c]; if (single && m[c] && enabled(single)) x.it = single, x.i = 0; });
     return out;
   },
   families(L){ const f = new Map(); (L || this.learned()).forEach(x => { const r = this.of(x.c).r; if (!f.has(r)) f.set(r, []); f.get(r).push(x); }); return f; },
@@ -3675,6 +3683,8 @@ const Bo = {
 function boIds(ids){ const s = Array.from(ids || ''); if (s.length !== 3) return ''; const ok = ch => /[\u3400-\u9fff\u2e80-\u2eff]/.test(ch); if (!ok(s[1]) || !ok(s[2])) return '';
   const w = {'⿰':['trái', 'phải'], '⿱':['trên', 'dưới'], '⿸':['bao trên trái', 'trong'], '⿵':['bao ngoài', 'trong'], '⿴':['bao quanh', 'trong'], '⿺':['bao dưới trái', 'trong'], '⿹':['bao trên phải', 'trong'], '⿶':['bao dưới', 'trong'], '⿷':['bao trái', 'trong']}[s[0]];
   return w ? s[1] + ' (' + w[0] + ') + ' + s[2] + ' (' + w[1] + ')' : ''; }
+/* đọc bằng giọng Han đã thu sẵn: chữ đứng riêng nếu là một từ trong sổ, không thì đọc cả từ chứa chữ đó */
+function boSay(c, it, force){ const s = SET(); if (!s.snd || (s.quiet && !force)) return; const w = [V.byH[c], it].find(x => x && enabled(x) && Snd.has(x.h)); if (w) Snd.play(w, 1); }
 function boLabel(r, c){ const n = boName(r, c); return n[0] ? 'Bộ ' + n[0] + (n[1] ? ' (' + n[1] + ')' : '') : 'Bộ ' + r; }
 function boConf(r){ const g = BO_LOOK.find(s => s.indexOf(r) >= 0); return g ? g.split('').filter(x => x !== r) : []; }
 function pickW(list, w){ const tot = list.reduce((a, x) => a + w(x), 0); let v = Math.random() * tot; for (const x of list) { v -= w(x); if (v <= 0) return x; } return list[list.length - 1]; }
@@ -3698,7 +3708,7 @@ function boGen(cfg){
       const k = pickW(kinds, wk);
       if (k === 'b1') { const x = pickChar(); if (x) return mk(k, x); }
       if (k === 'b2') { const x = pickChar(y => chars.some(z => Bo.of(z.c).r !== Bo.of(y.c).r)); if (x) return mk(k, x); }
-      if (k === 'b3') { const x = pickChar(y => { const o = Bo.of(y.c); return o.t === 'h' && o.sem && BO_NAME[o.sem] && (V.byH[y.c] || y.it.chars.length <= 2); }); if (x) return mk(k, x); }
+      if (k === 'b3') { const x = pickChar(y => { const o = Bo.of(y.c); return o.t === 'h' && o.sem && BO_NAME[o.sem] && ((V.byH[y.c] && enabled(V.byH[y.c])) || y.it.chars.length <= 2); }); if (x) return mk(k, x); }
       if (k === 'b4') { const x = pickChar(y => !!Bo.parts(y.c)); if (x) return mk(k, x); }
       if (k === 'b5') { const x = pickChar(y => { const o = Bo.of(y.c); return o.t === 'h' && o.ph && Bo.of(o.ph) && Bo.of(o.ph).py && o.py; }); if (x) return mk(k, x); }
     }
@@ -3716,13 +3726,13 @@ function boFamily(c){
     h('div', {class:'bohead'}, h('span', {class:'boglyph', lang:'zh-Hans'}, r), h('div', null, h('b', null, boLabel(r, c)), h('small', null, c + ' ' + (o.py || '') + (it ? ' · ' + it.m : '') + (boIds(o.ids) ? ' · ' + boIds(o.ids) : '')))),
     how ? h('p', {class:'fine'}, how) : null,
     fam.length ? h('div', null, h('p', {class:'fine'}, 'Chữ đã học cùng bộ (' + fam.length + '):'),
-      h('div', {class:'bochips', lang:'zh-Hans'}, fam.slice(0, 24).map(x => h('span', {class:'bochip', title:x.it.h + ' · ' + x.it.m}, h('b', null, x.c), h('small', null, (Bo.of(x.c).py || '')), h('small', {class:'mean'}, x.it.h === x.c ? x.it.m : x.it.h))))) : h('p', {class:'fine'}, 'Chưa học chữ nào khác cùng bộ này.'));
+      h('div', {class:'bochips', lang:'zh-Hans'}, fam.slice(0, 24).map(x => h('button', {type:'button', class:'bochip', title:x.it.h + ' · ' + x.it.m, onclick:() => boSay(x.c, x.it, true)}, h('b', null, x.c), h('small', null, (Bo.of(x.c).py || '')), h('small', {class:'mean'}, x.it.h === x.c ? x.it.m : x.it.h))))) : h('p', {class:'fine'}, 'Chưa học chữ nào khác cùng bộ này.'));
 }
 function exBo(ex, api){
   const c = ex.ch, o = Bo.of(c), it = ex.item, L = Bo.learned(), chars = Array.from(L.values()), after = h('div');
   let done = false, timer = null;
   const finish = ok => {
-    if (done) return; done = true; Bo.mark(o.r, ok); api.count('b', ok);
+    if (done) return; done = true; Bo.mark(o.r, ok); api.count('b', ok); boSay(c, it);
     after.append(finish.timeout ? '' : h('p', {class:'verdict ' + (ok ? 'ok' : 'bad')}, ok ? 'Đúng' : 'Chưa đúng'), boFamily(c));
     const go = () => { clearTimeout(timer); api.next(); }; after.appendChild(nextRow(go)); KEYS = {Enter:go, ' ':go};
     if (ok && SET().auto) timer = setTimeout(go, 2600); after.addEventListener('pointerdown', () => clearTimeout(timer));
@@ -3735,7 +3745,7 @@ function exBo(ex, api){
     /* chữ này thuộc bộ nào: nhiễu là các phần khác của chính chữ, bộ dễ nhầm và bộ khác đã học */
     const comp = Array.from(o.ids).filter(x => BO_NAME[x] && x !== o.r);
     const pool = Array.from(new Set(comp.concat(boConf(o.r)).concat(shuffle(Array.from(Bo.families().keys())))).values()).filter(x => x !== o.r && BO_NAME[x]);
-    const list = [o.r].concat(pool.slice(0, 3));
+    const names = new Set([boLabel(o.r, c)]), list = [o.r]; pool.forEach(r => { const n = boLabel(r, c); if (list.length < 4 && !names.has(n)) { names.add(n); list.push(r); } });
     prompt = h('div', {class:'prompt'}, big(c), word(), h('p', {class:'ask'}, 'Chữ ' + c + ' thuộc bộ nào?'));
     rightSel = '[data-r="' + o.r + '"]';
     body = h('div', {class:'opts boopts'}); shuffle(list).forEach((r, i) => body.appendChild(h('button', {type:'button', class:'opt', onclick:e => { if (done) return; Array.from(body.children).forEach(b => { b.disabled = true; if (b.dataset.r === o.r) b.classList.add('right'); }); if (r !== o.r) e.currentTarget.classList.add('wrong'); body.classList.add('done'); finish(r === o.r); }, 'data-r':r},
@@ -3750,12 +3760,12 @@ function exBo(ex, api){
     body = h('div', {class:'opts han'}); shuffle(list).forEach((x, i) => body.appendChild(h('button', {type:'button', class:'opt han', lang:'zh-Hans', 'data-c':x, onclick:e => { if (done) return; Array.from(body.children).forEach(b => { b.disabled = true; if (b.dataset.c === c) b.classList.add('right'); }); if (x !== c) e.currentTarget.classList.add('wrong'); body.classList.add('done'); finish(x === c); }}, h('span', {class:'k'}, i + 1), x)));
   } else if (ex.bo === 'b3') {
     /* đoán nghĩa nhờ bộ: nhiễu là nghĩa của chữ cùng âm hoặc cùng phần gợi âm */
-    const w = V.byH[c] && P('m')[c] ? V.byH[c] : it, sem = o.sem, plainPy = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const w = V.byH[c] && P('m')[c] && enabled(V.byH[c]) ? V.byH[c] : it, sem = o.sem, plainPy = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
     const others = items().filter(x => x !== w && x.m !== w.m && P('m')[x.h]);
     const sound = others.filter(x => x.chars.some(ch => { const q = Bo.of(ch); return q && (plainPy(q.py) === plainPy(o.py) || (o.ph && q.ph === o.ph)); }));
     const list = [w].concat(Array.from(new Set(shuffle(sound).concat(shuffle(others)))).slice(0, 3));
     const hint = h('p', {class:'fine', hidden:true}, 'Gợi ý: ' + sem + ' là ' + boLabel(sem, c).toLowerCase() + '.');
-    prompt = h('div', {class:'prompt'}, big(w.h.length === 1 ? c : w.h, w.h.length === 1 ? 120 : 90), h('p', {class:'muted'}, w.p), h('p', {class:'ask'}, 'Nhìn phần chỉ nghĩa ' + sem + ' trong chữ ' + c + '. Từ này nghĩa là gì?'), h('button', {type:'button', class:'btn small ghost', onclick:e => { hint.hidden = false; e.currentTarget.hidden = true; }}, 'Gợi ý'), hint);
+    prompt = h('div', {class:'prompt'}, w.h.length === 1 ? big(c) : h('div', {class:'center'}, wordEl(w.h, 96)), h('p', {class:'muted'}, w.p), h('p', {class:'ask'}, 'Nhìn phần chỉ nghĩa ' + sem + ' trong chữ ' + c + '. Từ này nghĩa là gì?'), h('button', {type:'button', class:'btn small ghost', onclick:e => { hint.hidden = false; e.currentTarget.hidden = true; }}, 'Gợi ý'), hint);
     rightSel = '[data-h="' + w.h + '"]';
     body = h('div', {class:'opts'}); shuffle(list).forEach((x, i) => body.appendChild(h('button', {type:'button', class:'opt', 'data-h':x.h, onclick:e => { if (done) return; Array.from(body.children).forEach(b => { b.disabled = true; if (b.dataset.h === w.h) b.classList.add('right'); }); if (x !== w) e.currentTarget.classList.add('wrong'); body.classList.add('done'); finish(x === w); }}, h('span', {class:'k'}, i + 1), x.m)));
   } else if (ex.bo === 'b4') {
@@ -3782,7 +3792,7 @@ function exBo(ex, api){
     shuffle(chars).forEach(x => add(Bo.of(x.c).py));
     prompt = h('div', {class:'prompt'}, big(c), h('p', {class:'ask'}, 'Phần ' + ph + ' (' + po.py + ') gợi âm cho chữ này. Chữ ' + c + ' đọc là gì?'));
     rightSel = '[data-p="' + o.py + '"]';
-    body = h('div', {class:'opts'}); shuffle(Array.from(pys)).forEach((p, i) => body.appendChild(h('button', {type:'button', class:'opt', 'data-p':p, onclick:e => { if (done) return; Array.from(body.children).forEach(b => { b.disabled = true; if (b.dataset.p === o.py) b.classList.add('right'); }); if (p !== o.py) e.currentTarget.classList.add('wrong'); body.classList.add('done'); finish(p === o.py); if (SET().snd) speak(c, 0.8); }}, h('span', {class:'k'}, i + 1), p)));
+    body = h('div', {class:'opts'}); shuffle(Array.from(pys)).forEach((p, i) => body.appendChild(h('button', {type:'button', class:'opt', 'data-p':p, onclick:e => { if (done) return; Array.from(body.children).forEach(b => { b.disabled = true; if (b.dataset.p === o.py) b.classList.add('right'); }); if (p !== o.py) e.currentTarget.classList.add('wrong'); body.classList.add('done'); finish(p === o.py); }}, h('span', {class:'k'}, i + 1), p)));
     void plainPy;
   }
   KEYS = {}; Array.from(body.querySelectorAll('button.opt')).forEach((b, i) => { KEYS[String(i + 1)] = () => b.click(); });
@@ -3845,7 +3855,7 @@ function boTable(){
   const fam = Array.from(Bo.families().entries()).sort((a, b) => b[1].length - a[1].length), st = Bo.stat();
   return h('div', {class:'botable'}, fam.map(([r, xs]) => { const a = st[r];
     return h('details', {class:'borow'}, h('summary', null, h('span', {class:'boglyph sm', lang:'zh-Hans'}, r), h('span', null, boLabel(r, xs[0].c)), h('small', {class:'muted'}, xs.length + ' chữ' + (a ? ' · đúng ' + a[1] + '/' + a[0] : ''))),
-      h('div', {class:'bochips', lang:'zh-Hans'}, xs.map(x => h('span', {class:'bochip'}, h('b', null, x.c), h('small', null, Bo.of(x.c).py || ''), h('small', {class:'mean'}, x.it.h === x.c ? x.it.m : x.it.h))))); }));
+      h('div', {class:'bochips', lang:'zh-Hans'}, xs.map(x => h('button', {type:'button', class:'bochip', onclick:() => boSay(x.c, x.it, true)}, h('b', null, x.c), h('small', null, Bo.of(x.c).py || ''), h('small', {class:'mean'}, x.it.h === x.c ? x.it.m : x.it.h))))); }));
 }
 
 try { if (typeof SKN === 'object' && !SKN.b) SKN.b = 'Bộ thủ'; } catch (e) {}
@@ -3911,7 +3921,7 @@ const Session = {
     S.step();
   },
   startPractice(cfg){
-    migrateKeys();
+    migrateKeys(); try { applyNames(); } catch (e) {}
     const now = Date.now(), S = this;
     Object.assign(S, {on:true, practice:true, blitz:null, onResult:null, t0:now, T:cfg.mins * 60000, pi:0, again:[], n:0, ok:0, by:{}, over:false, wrapN:0, newN:0, exT0:now, covered:new Set(), tick:null, missed:new Set(), redo:0, sealCh:null, sealNew:null}); FX.reset();
     S.prSkill = cfg.skill || null; S.boMode = cfg.boMode || null; S.boCh = cfg.boMode === 'timed' ? (cfg.count || 20) : cfg.boMode === 'write' ? (cfg.count || 10) : null;
@@ -3923,7 +3933,7 @@ const Session = {
   },
   /* Cấp tốc từ mới: một lô từ chưa học, luyện dồn đến khi thuộc hết (blitzGen trong v3.js) */
   startBlitz(cfg){
-    migrateKeys();
+    migrateKeys(); try { applyNames(); } catch (e) {}
     const now = Date.now(), S = this;
     Object.assign(S, {on:true, practice:false, blitz:null, onResult:null, t0:now, T:(cfg.mins || 180) * 60000, pi:0, again:[], n:0, ok:0, by:{}, over:false, wrapN:0, newN:0, exT0:now, covered:new Set(), tick:null, missed:new Set(), redo:0, sealCh:null, sealNew:null}); FX.reset();
     S.phases = [{name:'Cấp tốc', budget:Infinity, next:blitzGen(cfg, S)}];
@@ -4054,12 +4064,12 @@ function viewSettings(){
       writeStylePanel(set, save),
       sw('setStrict', 'Chấm nét chặt theo chữ khải (mặc định chấm thoáng, nhận cả nét kiểu chữ in)', 'strict', set.strict),
       sw('setQuiet', 'Chế độ yên lặng: bỏ bài nghe, không tự phát âm', 'quiet', set.quiet),
-      sw('setSnd', 'Tự phát âm khi hiện đáp án', 'snd', set.snd), sw('setAuto', 'Tự sang thẻ kế khi trả lời đúng', 'auto', set.auto), sw('setNames', 'Học cả năm tên riêng', 'names', set.names),
+      sw('setSnd', 'Tự phát âm khi hiện đáp án', 'snd', set.snd), sw('setAuto', 'Tự sang thẻ kế khi trả lời đúng', 'auto', set.auto), h('label', {class:'switch', for:'setNames'}, h('span', null, 'Học tên riêng (' + V.items.filter(it => it.g === 'Tên riêng').length + ' tên người trong bài). Tắt thì bỏ hết tên riêng khỏi danh sách từ, đáp án và các câu có tên'), h('input', {type:'checkbox', id:'setNames', checked:set.names, onchange:e => { save('names', e.currentTarget.checked); applyNames(); }})),
       sw('setT3', 'Gộp thanh 1, thanh 4 và thanh nhẹ thành một lựa chọn trong bài pinyin (mặc định bật; tắt để học đủ 5 thanh)', 't3', set.t3)),
     fxPanel(save),
     STANDALONE ? nhacPanel() : null,
     h('section', {class:'panel'}, h('h2', null, 'Dữ liệu'),
-      h('p', {class:'muted'}, 'Kho từ: ' + V.items.length + ' mục (' + V.seedN + ' mục gốc, ' + V.dbN + ' mục nạp qua kho dữ liệu; kho dữ liệu: ' + V.dbState + '). Âm thanh thu sẵn: ' + Object.keys(Snd.index || {}).length + ' mục.'),
+      h('p', {class:'muted'}, 'Kho từ: ' + V.items.length + ' mục' + (set.names ? '' : ', đang học ' + items().length + ' (đã bỏ tên riêng)') + ' (' + V.seedN + ' mục gốc, ' + V.dbN + ' mục nạp qua kho dữ liệu; kho dữ liệu: ' + V.dbState + '). Âm thanh thu sẵn: ' + Object.keys(Snd.index || {}).length + ' mục.'),
       h('p', {class:'muted'}, Store.mode === 'claude' ? 'Tiến độ lưu trên máy chủ Claude theo tài khoản của anh, đồng bộ giữa các máy.' : (Cloud.user ? 'Tiến độ lưu trên máy này và được chép lên máy chủ theo tài khoản đang đăng nhập.' : 'Tiến độ đang lưu trên máy này.')),
       h('p', {class:'muted'}, 'Câu mẫu: ' + SENTS.length + ' câu, đang dùng được ' + readySents().length + '.'),
       m.flags.length ? h('p', {class:'muted'}, 'Mục anh đã báo lỗi: ' + m.flags.map(f => f.h).join('、') + '. Claude sẽ soát ở lần nạp từ kế tiếp.') : null),
@@ -4090,7 +4100,7 @@ async function boot(){
     show('err', [h('h1', null, 'Chưa mở được sổ'), h('p', {class:'muted'}, 'Không đọc được dữ liệu (' + ((e && (e.code || e.message)) || 'lỗi') + '). Tiến độ của anh không bị ghi đè. Kiểm tra mạng rồi thử lại.'), h('div', {class:'row'}, h('button', {type:'button', class:'btn primary big', onclick:() => { view().textContent = ''; view().appendChild(h('p', {class:'muted', id:'bootmsg'}, 'Đang mở sổ…')); boot(); }}, 'Thử lại'))]);
   }
 }
-window.__app = {FX, Ocr, Ck, viewCheck, Bo, boGen, paperAlign, viewBlitz, blitzPool, Session, exOrder, exMCQ, exType, exTones, exFlip, exIntro, exWrite, show, h, sentProgress, startSent, SENTS:() => SENTS, exSent, sentAlign, exTones, Cloud, Ink, exFree, practiceGen, readySents, SET, viewPractice, viewSettings, Store, V, Session, Strokes, Snd, segment, grade, stats, P, META, viewHome, viewPlacement, viewPlaceGroups, applyPlacement, items, newQueue, dueList, unplaced};
+window.__app = {FX, Ocr, Ck, viewCheck, Bo, boGen, applyNames, SENTSALL:() => SENTS_ALL, paperAlign, viewBlitz, blitzPool, Session, exOrder, exMCQ, exType, exTones, exFlip, exIntro, exWrite, show, h, sentProgress, startSent, SENTS:() => SENTS, exSent, sentAlign, exTones, Cloud, Ink, exFree, practiceGen, readySents, SET, viewPractice, viewSettings, Store, V, Session, Strokes, Snd, segment, grade, stats, P, META, viewHome, viewPlacement, viewPlaceGroups, applyPlacement, items, newQueue, dueList, unplaced};
 boot();
 })();
 </script>
