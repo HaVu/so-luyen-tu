@@ -828,6 +828,41 @@ input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;bac
 .ckw .m.mt{font-style:italic;color:var(--muted)}
 @media (max-width:440px){.ckcrop,.ckstd{width:128px!important;height:128px}.ckcrop{height:auto;max-height:128px}.ckstd svg{width:112px;height:112px}.ckpair{gap:8px}.ckdetail{padding:10px 8px}}
 
+/* ===== Ôn theo bộ (24/11) ===== */
+.prgrid .prtile.pr-b{grid-column:1 / -1;flex-direction:row;text-align:left;gap:12px;align-items:center}
+.prgrid .prtile.pr-b .primg{width:120px;max-width:34%;flex:none}
+.prgrid .prtile.pr-b .prtxt{display:flex;flex-direction:column;gap:4px;align-items:flex-start}.prgrid .prtile.pr-b .prtxt>span{display:block}
+.prtile.pr-b{background-image:radial-gradient(ellipse at 20% 50%,rgba(200,150,240,.28),transparent 65%)}
+.prtile.pr-b .prtxt{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.boglyph{display:inline-flex;align-items:center;justify-content:center;font-family:var(--han,inherit);font-size:30px;line-height:1;width:48px;height:48px;border-radius:14px;flex:none;
+  background:var(--card);border:2px solid var(--line);color:var(--ink);box-shadow:inset 0 -3px 0 rgba(0,0,0,.06),inset 0 2px 0 rgba(255,255,255,.6),0 2px 4px rgba(60,35,10,.15)}
+.boglyph.sm{width:36px;height:36px;font-size:24px;border-radius:10px;vertical-align:middle}
+.boglyph.big{width:120px;height:120px;font-size:84px;border-radius:26px}
+.boopts .opt{display:flex;align-items:center;gap:8px;text-align:left}
+.bofam{margin:10px 0;padding:12px;border-radius:18px;border:2px dashed var(--line);background:var(--card2,var(--card))}
+.bohead{display:flex;gap:10px;align-items:center}
+.bohead small{display:block;color:var(--muted);font-size:13.5px;margin-top:2px}
+.bochips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.bochip{display:inline-flex;flex-direction:column;align-items:center;min-width:52px;padding:4px 6px 5px;border-radius:12px;background:var(--card);border:1.5px solid var(--line)}
+.bochip b{font-size:24px;font-weight:400;line-height:1.15}
+.bochip small{font-size:11.5px;color:var(--muted);line-height:1.2;max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bochip small.mean{color:var(--ink)}
+.boframe{display:grid;gap:4px;width:150px;height:150px;margin:10px auto;padding:6px;border-radius:20px;border:2.5px solid var(--grid,var(--line));background:var(--card)}
+.boframe.lr{grid-template-columns:1fr 1fr}
+.boframe.tb{grid-template-rows:1fr 1fr}
+.boslot{display:flex;align-items:center;justify-content:center;font-size:52px;line-height:1;border-radius:12px;border:2px dashed var(--line);color:var(--muted)}
+.boslot.on{border-style:solid;color:var(--ink)}
+.boslot.ok{border-color:rgba(40,150,80,.8);background:rgba(60,170,100,.12)}
+.boslot.bad{border-color:rgba(210,50,40,.85);background:rgba(230,80,60,.12)}
+.botray{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:360px;margin:6px auto 10px}
+.botile{font-size:40px;line-height:1;padding:14px 0;border-radius:16px;border:2px solid var(--line);background:var(--card);cursor:pointer;
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.07),inset 0 2px 0 rgba(255,255,255,.6),0 3px 5px rgba(60,35,10,.15)}
+.botile:disabled{opacity:.35}
+.botile:active{transform:translateY(2px)}
+.botable{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.borow summary{display:flex;align-items:center;gap:10px;cursor:pointer;padding:6px 4px}
+.borow summary small{margin-left:auto}
+
 /* màn chờ khi mở app */
 #splash{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;background-color:var(--paper);background-image:var(--art-bg,none);background-size:var(--art-bgsize,auto);transition:opacity .45s ease,visibility .45s}
 #splash.out{opacity:0;visibility:hidden}
@@ -2179,6 +2214,7 @@ function viewPracticeAll(){
   sync();
 }
 function practiceGen(cfg){
+  if (cfg.skill === 'b') return boGen(cfg);
   const pool = practicePool(cfg.src, cfg.group, cfg.skill); if (!pool.length && !cfg.allSents) return () => null;
   let sents;
   if (cfg.allSents && cfg.set === 't'){ sents = SENTS.filter(x => x.n).sort((a, b) => a.n - b.n); const i0 = Math.max(0, sents.findIndex(x => x.n >= (cfg.from || 1))); sents = sents.slice(i0).concat(sents.slice(0, i0)); } // câu của thầy: theo đúng thứ tự bài tập
@@ -3040,7 +3076,8 @@ const PR_SK = [
   {id:'blitz', name:'Cấp tốc từ mới', sub:'Học dồn một lô từ mới cho thuộc nhanh', img:'pr-blitz', alt:'m-reo'},
   {id:'p', name:'Pinyin', sub:'Nhìn nghĩa tiếng Việt hoặc nghe, rồi gõ pinyin', img:'pr-pinyin', alt:'m-like', kinds:['pv', 'pl']},
   {id:'w', name:'Viết', sub:'Dịch từ tiếng Việt hoặc nghe, rồi viết chữ Hán; có cả câu', img:'pr-viet', alt:'m-but', kinds:['wv', 'wl', 'ws', 'wd']},
-  {id:'c', name:'Luyện chung', sub:'Nghe, nhận mặt chữ, xếp từ thành câu', img:'pr-chung', alt:'m-vui', kinds:['l', 'm', 'ord']}
+  {id:'c', name:'Luyện chung', sub:'Nghe, nhận mặt chữ, xếp từ thành câu', img:'pr-chung', alt:'m-vui', kinds:['l', 'm', 'ord']},
+  {id:'b', name:'Ôn theo bộ', sub:'Nhận bộ, tìm chữ cùng bộ, ghép chữ, đoán nghĩa và âm nhờ bộ', img:'pr-bo', alt:'m-like', kinds:['b1', 'b2', 'b3', 'b4', 'b5']}
 ];
 const PR_SRC = [['auto', 'Gợi ý cho bạn'], ['due', 'Sắp quên nhất'], ['weak', 'Hay sai'], ['fresh', 'Mới học'], ['grp', 'Theo nhóm'], ['all', 'Tất cả đã học']];
 function prArt(sk){
@@ -3054,11 +3091,13 @@ function viewPractice(pick){
     const pst = META().pst || {}, pool = blitzPool().length;
     const tile = sk => {
       const r = pst[sk.id], note = sk.id === 'blitz' ? (pool ? pool + ' từ chưa học' : 'Chưa có từ mới') : r ? 'Lần trước: đúng ' + r.ok + '/' + r.n : (learned ? 'Chưa luyện' : 'Cần học vài từ trước');
+      const txt = [h('span', {class:'prname'}, sk.name), h('span', {class:'prsub'}, sk.sub), h('span', {class:'prnote'}, note)];
       return h('button', {type:'button', class:'prtile pr-' + sk.id, onclick:() => sk.id === 'blitz' ? viewBlitz() : viewPractice(sk.id)},
-        prArt(sk), h('span', {class:'prname'}, sk.name), h('span', {class:'prsub'}, sk.sub), h('span', {class:'prnote'}, note));
+        prArt(sk), sk.id === 'b' ? h('span', {class:'prtxt'}, txt) : txt);
     };
     return show('pr', [h('h1', null, 'Luyện tập'), h('p', {class:'muted'}, 'Chọn kỹ năng muốn luyện.'), h('div', {class:'prgrid'}, PR_SK.map(tile))]);
   }
+  if (pick === 'b' && !Bo.d) { show('pr', [h('p', {class:'muted'}, 'Đang tải dữ liệu bộ thủ…')]); Bo.load().then(() => viewPractice('b')).catch(() => show('pr', [h('p', {class:'verdict bad'}, 'Chưa tải được dữ liệu bộ thủ. Kiểm tra mạng rồi thử lại.'), h('button', {type:'button', class:'btn', onclick:() => viewPractice()}, 'Quay lại')])); return; }
   const sk = PR_SK.find(x => x.id === pick), set = SET(), sv = (META().set.pr2 || {})[pick] || {};
   const st = {src:sv.src || 'auto', group:sv.group || '', mins:sv.mins || 10};
   const groups = Array.from(new Set(items().filter(it => P('m')[it.h]).map(groupOf))).sort();
@@ -3067,7 +3106,7 @@ function viewPractice(pick){
   const info = h('p', {class:'fine'});
   const grpSel = h('select', {class:'sel', onchange:e => { st.group = e.currentTarget.value; paint(); }}, groups.map(g => h('option', {value:g, selected:st.group === g}, g)));
   const grpRow = h('div', {class:'row'}, h('span', {class:'muted'}, 'Nhóm:'), grpSel);
-  const count = () => { const src = st.src === 'grp' ? 'all' : st.src; return practicePool(src, st.src === 'grp' ? st.group : '', pick).length; };
+  const count = () => { if (pick === 'b') return Bo.learned().size; const src = st.src === 'grp' ? 'all' : st.src; return practicePool(src, st.src === 'grp' ? st.group : '', pick).length; };
   const startBtn = h('button', {type:'button', class:'btn primary big', onclick:() => {
     keep(); Store.flush(); Snd.unlock(); FX.unlock();
     Session.startPractice({skill:pick, kinds:sk.kinds.slice(), src:st.src === 'grp' ? 'all' : st.src, group:st.src === 'grp' ? st.group : '', mins:st.mins});
@@ -3075,13 +3114,15 @@ function viewPractice(pick){
   const paint = () => {
     grpRow.hidden = st.src !== 'grp';
     const n = count(); startBtn.disabled = !n;
-    info.textContent = !learned ? 'Chưa có từ nào đã học. Học một phiên hoặc dùng Cấp tốc từ mới trước.' : n ? n + ' từ trong lựa chọn này.' : 'Không có từ nào trong lựa chọn này.';
+    info.textContent = !learned ? 'Chưa có từ nào đã học. Học một phiên hoặc dùng Cấp tốc từ mới trước.' : pick === 'b' ? '' : n ? n + ' từ trong lựa chọn này.' : 'Không có từ nào trong lựa chọn này.';
   };
   const one = (list, key) => h('div', {class:'row'}, list.map(o => h('button', {type:'button', class:'btn', 'aria-pressed':String(st[key] === o[0]), onclick:e => { st[key] = o[0]; Array.from(e.currentTarget.parentNode.children).forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget))); paint(); }}, o[1])));
   const quietNote = set.quiet && pick !== 'c' ? h('p', {class:'fine'}, 'Đang bật yên lặng nên bỏ phần nghe.') : set.quiet ? h('p', {class:'fine'}, 'Đang bật yên lặng nên bỏ phần nghe, còn mặt chữ và xếp câu.') : null;
   show('pr', [
     h('div', {class:'prhead pr-' + pick}, prArt(sk), h('div', null, h('h1', null, sk.name), h('p', {class:'muted'}, sk.sub)),
       h('button', {type:'button', class:'btn small', onclick:() => viewPractice()}, 'Đổi kỹ năng')),
+    pick === 'b' ? h('section', {class:'panel'}, h('h2', null, 'Ôn theo bộ'), h('p', {class:'fine'}, 'Dùng các chữ bạn đã học (' + Bo.learned().size + ' chữ, ' + Bo.families().size + ' bộ). Bộ nào bạn hay nhầm hoặc lâu chưa gặp sẽ ra nhiều hơn. Năm dạng bài: chữ thuộc bộ nào, chữ nào mang bộ này, đoán nghĩa nhờ bộ, ghép chữ từ hai phần, đọc âm nhờ phần gợi âm.'),
+      h('details', {class:'ckopt'}, h('summary', null, 'Xem bảng các bộ đã gặp'), boTable())) :
     h('section', {class:'panel'}, h('h2', null, 'Lấy từ nào'), one(PR_SRC, 'src'), grpRow,
       h('small', {class:'fine'}, '"Gợi ý cho bạn" chọn những từ kỹ năng này của bạn đang yếu nhất, từ hay sai và từ vừa sai lần luyện trước.'), info),
     h('section', {class:'panel'}, h('h2', null, 'Thời lượng'), one([5, 10, 15, 20, 30].map(m => [m, m + ' phút']), 'mins'), quietNote,
@@ -3546,6 +3587,188 @@ function viewCheck(){
   ]);
 }
 
+/* =====================================================================
+   ÔN THEO BỘ (24/11)
+   Dữ liệu bộ và cấu tạo chữ: data/bo.json (từ makemeahanzi, LGPL), mỗi chữ [bộ, cấu tạo IDS, loại (h hình thanh, y hội ý, t tượng hình), phần chỉ nghĩa, phần gợi âm, pinyin].
+   Năm dạng bài, chỉ dùng chữ đã học: nhận bộ của chữ, tìm chữ cùng bộ, đoán nghĩa nhờ bộ, ghép chữ từ hai phần, đọc âm nhờ phần gợi âm.
+   Kết quả từng bộ lưu ở meta.bo[bộ] = [số lần, số đúng, lần cuối]: bộ hay sai, lâu chưa gặp thì ra nhiều hơn.
+   ===================================================================== */
+const BO_NAME = (() => {
+  const t = {}, add = (forms, ten, nghia) => forms.split('').forEach(f => { t[f] = [ten, nghia]; });
+  [['氵水氺', 'Thủy', 'nước'], ['口', 'Khẩu', 'miệng'], ['艹艸', 'Thảo', 'cỏ, cây cỏ'], ['木', 'Mộc', 'cây, gỗ'], ['扌手', 'Thủ', 'tay'], ['亻人', 'Nhân', 'người'],
+   ['钅釒金', 'Kim', 'kim loại'], ['虫', 'Trùng', 'sâu bọ'], ['土', 'Thổ', 'đất'], ['⺼肉', 'Nhục', 'thịt, cơ thể'], ['忄心⺗', 'Tâm', 'tim, tình cảm'], ['女', 'Nữ', 'phụ nữ'],
+   ['言訁讠', 'Ngôn', 'lời nói'], ['⺮竹', 'Trúc', 'tre'], ['纟糹糸', 'Mịch', 'sợi tơ'], ['辶辵', 'Sước', 'bước đi'], ['火炏', 'Hỏa', 'lửa'], ['灬', 'Hỏa', 'lửa (bốn chấm)'],
+   ['疒', 'Nạch', 'bệnh tật'], ['足', 'Túc', 'chân'], ['日', 'Nhật', 'mặt trời, ngày'], ['石', 'Thạch', 'đá'], ['山', 'Sơn', 'núi'], ['王玉', 'Ngọc', 'ngọc quý'],
+   ['目', 'Mục', 'mắt'], ['犭犬', 'Khuyển', 'chó, thú'], ['鱼魚', 'Ngư', 'cá'], ['鳥鸟', 'Điểu', 'chim'], ['衤衣', 'Y', 'áo, vải'], ['刂刀刁', 'Đao', 'dao'],
+   ['宀', 'Miên', 'mái nhà'], ['酉', 'Dậu', 'bình rượu'], ['禾', 'Hòa', 'lúa'], ['贝貝', 'Bối', 'vỏ sò, tiền'], ['广', 'Nghiễm', 'mái hiên'], ['马馬', 'Mã', 'ngựa'],
+   ['巾', 'Cân', 'khăn'], ['车車', 'Xa', 'xe'], ['米', 'Mễ', 'gạo'], ['门門', 'Môn', 'cửa'], ['大', 'Đại', 'to lớn'], ['田', 'Điền', 'ruộng'], ['穴', 'Huyệt', 'hang, lỗ'],
+   ['页頁', 'Hiệt', 'đầu'], ['力', 'Lực', 'sức'], ['飠饣食', 'Thực', 'ăn'], ['礻示', 'Thị', 'thần, cúng tế'], ['彳', 'Xích', 'bước chân'], ['雨', 'Vũ', 'mưa'],
+   ['囗', 'Vi', 'vây quanh'], ['尸', 'Thi', 'thân người nằm'], ['攵攴', 'Phộc', 'đánh khẽ'], ['舟', 'Chu', 'thuyền'], ['一', 'Nhất', 'một'], ['戈', 'Qua', 'cây giáo'],
+   ['牛', 'Ngưu', 'trâu bò'], ['耳', 'Nhĩ', 'tai'], ['隹', 'Chuy', 'chim đuôi ngắn'], ['子孑', 'Tử', 'con'], ['厂', 'Hán', 'sườn núi'], ['弓', 'Cung', 'cái cung'],
+   ['歹歺', 'Ngạt', 'xương tàn'], ['欠', 'Khiếm', 'há miệng, thiếu'], ['皿', 'Mãnh', 'bát đĩa'], ['冫⺀', 'Băng', 'băng, lạnh'], ['羽', 'Vũ', 'lông vũ'], ['革', 'Cách', 'da thuộc'],
+   ['儿', 'Nhân', 'người (chân đi)'], ['罒网罓⺳', 'Võng', 'lưới'], ['气', 'Khí', 'hơi'], ['十', 'Thập', 'mười'], ['羊', 'Dương', 'dê'], ['走', 'Tẩu', 'chạy'],
+   ['又', 'Hựu', 'tay phải, lại'], ['骨', 'Cốt', 'xương'], ['髟', 'Tiêu', 'tóc dài'], ['白', 'Bạch', 'trắng'], ['丿', 'Phiệt', 'nét phẩy'], ['耒', 'Lỗi', 'cái cày'],
+   ['亠', 'Đầu', 'nắp đậy'], ['寸', 'Thốn', 'tấc'], ['方', 'Phương', 'vuông, hướng'], ['鬼', 'Quỷ', 'ma'], ['黑', 'Hắc', 'đen'], ['殳', 'Thù', 'binh khí'],
+   ['户', 'Hộ', 'cửa một cánh'], ['毛', 'Mao', 'lông'], ['齒齿', 'Xỉ', 'răng'], ['二', 'Nhị', 'hai'], ['立', 'Lập', 'đứng'], ['冖', 'Mịch', 'khăn trùm'],
+   ['勹', 'Bao', 'bao bọc'], ['匚', 'Phương', 'cái hộp'], ['曰', 'Viết', 'nói'], ['月', 'Nguyệt', 'trăng'], ['瓦', 'Ngõa', 'ngói'], ['見见', 'Kiến', 'nhìn'],
+   ['角', 'Giác', 'sừng'], ['豸', 'Trĩ', 'thú'], ['冂', 'Quynh', 'vùng xa'], ['彡', 'Sam', 'lông, vằn'], ['臼', 'Cữu', 'cối giã'], ['虍', 'Hô', 'vằn hổ'],
+   ['豕', 'Thỉ', 'lợn'], ['鹿', 'Lộc', 'hươu'], ['斤', 'Cân', 'cái rìu'], ['止', 'Chỉ', 'dừng'], ['行', 'Hành', 'đi'], ['丨', 'Cổn', 'nét sổ'], ['八丷', 'Bát', 'tám, tách ra'],
+   ['卩㔾', 'Tiết', 'đốt tre'], ['厶', 'Khư', 'riêng tư'], ['士', 'Sĩ', 'kẻ sĩ'], ['夕', 'Tịch', 'buổi tối'], ['矢', 'Thỉ', 'mũi tên'], ['辛', 'Tân', 'cay'],
+   ['夂', 'Truy', 'đến sau'], ['小⺌⺍', 'Tiểu', 'nhỏ'], ['廾', 'Củng', 'chắp tay'], ['缶', 'Phẫu', 'đồ sành'], ['風风', 'Phong', 'gió'], ['乙乚乛', 'Ất', 'can Ất'],
+   ['几', 'Kỷ', 'ghế dựa'], ['彐彑', 'Kệ', 'đầu con nhím'], ['豆', 'Đậu', 'hạt đậu'], ['鼠', 'Thử', 'chuột'], ['凵', 'Khảm', 'há miệng'], ['匸', 'Hệ', 'che đậy'],
+   ['舌', 'Thiệt', 'lưỡi'], ['丶', 'Chủ', 'nét chấm'], ['臣', 'Thần', 'bề tôi'], ['尢尣兀', 'Uông', 'yếu đuối'], ['工', 'Công', 'thợ, việc'], ['文', 'Văn', 'văn vẻ'],
+   ['爫爪', 'Trảo', 'móng vuốt'], ['片', 'Phiến', 'mảnh'], ['用', 'Dụng', 'dùng'], ['皮', 'Bì', 'da'], ['身', 'Thân', 'thân thể'], ['青靑龶', 'Thanh', 'xanh'],
+   ['幺', 'Yêu', 'nhỏ nhắn'], ['龙龍', 'Long', 'rồng'], ['巳', 'Tỵ', 'chi Tỵ'], ['弋', 'Dặc', 'bắn'], ['斗', 'Đẩu', 'cái đấu'], ['瓜', 'Qua', 'dưa'], ['生', 'Sinh', 'sống'],
+   ['禸', 'Nhựu', 'vết chân thú'], ['韦韋', 'Vi', 'da thuộc'], ['音', 'Âm', 'âm thanh'], ['鬥', 'Đấu', 'đánh nhau'], ['亅', 'Quyết', 'nét móc'], ['入', 'Nhập', 'vào'],
+   ['夊', 'Tuy', 'đi chậm'], ['巛川', 'Xuyên', 'sông'], ['干', 'Can', 'khô, can thiệp'], ['比', 'Tỷ', 'so sánh'], ['父', 'Phụ', 'cha'], ['疋', 'Sơ', 'cái chân'],
+   ['自', 'Tự', 'tự mình, mũi'], ['血', 'Huyết', 'máu'], ['覀襾西', 'Á', 'che đậy'], ['赤', 'Xích', 'đỏ'], ['釆', 'Biện', 'phân biệt'], ['里', 'Lý', 'làng'], ['麻', 'Ma', 'cây gai'],
+   ['匕', 'Chủy', 'cái thìa'], ['卜⺊', 'Bốc', 'bói'], ['廴', 'Dẫn', 'bước dài'], ['母', 'Mẫu', 'mẹ'], ['毋', 'Vô', 'chớ'], ['癶', 'Bát', 'gạt ngược'], ['老耂', 'Lão', 'già'],
+   ['而', 'Nhi', 'mà, râu'], ['聿肀', 'Duật', 'cây bút'], ['至', 'Chí', 'đến'], ['色', 'Sắc', 'màu sắc'], ['虎', 'Hổ', 'con hổ'], ['鬲', 'Cách', 'cái nồi'], ['非', 'Phi', 'không phải'],
+   ['鹵卤', 'Lỗ', 'muối'], ['麥麦', 'Mạch', 'lúa mạch'], ['黽黾', 'Mãnh', 'con ếch'], ['鼓', 'Cổ', 'cái trống'], ['鼻', 'Tỵ', 'mũi'], ['齊齐', 'Tề', 'ngang bằng'], ['屮', 'Triệt', 'mầm cây'],
+   ['己', 'Kỷ', 'bản thân'], ['爻', 'Hào', 'hào âm dương'], ['甘', 'Cam', 'ngọt'], ['矛', 'Mâu', 'cây mâu'], ['舛', 'Suyễn', 'trái ngược'], ['艮', 'Cấn', 'bền cứng'],
+   ['谷', 'Cốc', 'thung lũng'], ['辰', 'Thần', 'giờ Thìn'], ['韭', 'Cửu', 'rau hẹ'], ['首', 'Thủ', 'đầu'], ['香', 'Hương', 'thơm'], ['黍', 'Thử', 'lúa nếp'], ['黹', 'Chỉ', 'may vá'],
+   ['丬爿', 'Tường', 'mảnh gỗ'], ['旡无', 'Vô', 'không'], ['氏', 'Thị', 'họ'], ['民', 'Dân', 'dân'], ['牙', 'Nha', 'răng'], ['玄', 'Huyền', 'đen huyền'], ['羋', 'Mị', 'tiếng dê kêu'],
+   ['邑', 'Ấp', 'thành ấp'], ['阜', 'Phụ', 'gò đất'], ['隶', 'Đãi', 'kịp'], ['面', 'Diện', 'mặt'], ['鬯', 'Sưởng', 'rượu nếp'], ['黄黃', 'Hoàng', 'vàng'], ['龟龜', 'Quy', 'rùa'],
+   ['鼎', 'Đỉnh', 'cái vạc'], ['龠', 'Dược', 'ống sáo'], ['支', 'Chi', 'cành'], ['飛飞', 'Phi', 'bay'], ['長镸长', 'Trường', 'dài'], ['高', 'Cao', 'cao']].forEach(x => add(...x));
+  return t;
+})();
+/* 阝 bên trái là bộ Phụ (gò đất), bên phải là bộ Ấp (thành ấp) */
+function boName(r, c){
+  if (r === '阝') { const d = Bo.d && c && Bo.d[c]; const left = d && d[1] && d[1][0] === '⿰' && d[1][1] === '阝'; return left ? ['Phụ', 'gò đất (阝 bên trái)'] : ['Ấp', 'thành ấp (阝 bên phải)']; }
+  return BO_NAME[r] || ['', ''];
+}
+const BO_LOOK = ['氵冫', '礻衤', '亻彳', '艹⺮', '日目曰', '讠言', '忄心', '扌木', '刂力', '宀冖', '口囗', '王玉', '钅饣', '辶廴', '月⺼', '己巳', '土士', '人入八', '疒广厂', '攵夂'];
+const Bo = {
+  d:null, p:null,
+  load(){ if (this.d) return Promise.resolve(this.d); if (!this.p) this.p = fetch('data/bo.json').then(r => { if (!r.ok) throw new Error('bo'); return r.json(); }).then(j => { this.d = j; return j; }).catch(e => { this.p = null; throw e; }); return this.p; },
+  of(c){ const x = this.d && this.d[c]; return x ? {r:x[0], ids:x[1] || '', t:x[2] || '', sem:x[3] || '', ph:x[4] || '', py:x[5] || ''} : null; },
+  /* chữ đã học (thẻ mặt chữ hoặc chữ viết đã có), mỗi chữ kèm một từ chứa nó */
+  learned(){
+    const m = P('m'), out = new Map();
+    items().forEach(it => { if (!m[it.h] || !enabled(it)) return; it.chars.forEach((c, i) => { if (!out.has(c) && this.d && this.d[c]) out.set(c, {c, it, i}); }); });
+    out.forEach((x, c) => { const single = V.byH[c]; if (single && m[c]) x.it = single, x.i = 0; });
+    return out;
+  },
+  families(L){ const f = new Map(); (L || this.learned()).forEach(x => { const r = this.of(x.c).r; if (!f.has(r)) f.set(r, []); f.get(r).push(x); }); return f; },
+  /* hai phần lớn nhất của chữ (trái phải hoặc trên dưới), dùng cho bài ghép chữ */
+  parts(c){ const o = this.of(c); if (!o || !o.ids || o.r === c) return null; const s = Array.from(o.ids); if ((s[0] !== '⿰' && s[0] !== '⿱') || s.length !== 3 || (s[1] !== o.r && s[2] !== o.r && s[1] !== o.sem && s[2] !== o.sem) || s[1] === '一' || s[2] === '一') return null;
+    const ok = ch => /[㐀-鿿⺀-⻿]/.test(ch); if (!ok(s[1]) || !ok(s[2])) return null; return {k:s[0], a:s[1], b:s[2]}; },
+  stat(){ const m = META(); return (m.bo = m.bo || {}); },
+  mark(r, ok){ const s = this.stat(), a = s[r] = s[r] || [0, 0, 0]; a[0]++; if (ok) a[1]++; a[2] = Date.now(); if (a[0] > 40) { a[0] = Math.round(a[0] / 2); a[1] = Math.round(a[1] / 2); } Store.mark('meta'); },
+  /* điểm ưu tiên của một bộ: chưa gặp, hay sai, lâu không gặp thì cao */
+  need(r){ const a = this.stat()[r]; if (!a) return 2; const acc = a[1] / Math.max(1, a[0]), days = (Date.now() - a[2]) / 864e5; return 0.3 + (1 - acc) * 2 + Math.min(1.5, days / 4); }
+};
+/* cấu tạo chữ viết thành lời (phông chữ trên máy thường không có các ký hiệu ⿰ ⿱) */
+function boIds(ids){ const s = Array.from(ids || ''); if (s.length !== 3) return ''; const ok = ch => /[\u3400-\u9fff\u2e80-\u2eff]/.test(ch); if (!ok(s[1]) || !ok(s[2])) return '';
+  const w = {'⿰':['trái', 'phải'], '⿱':['trên', 'dưới'], '⿸':['bao trên trái', 'trong'], '⿵':['bao ngoài', 'trong'], '⿴':['bao quanh', 'trong'], '⿺':['bao dưới trái', 'trong'], '⿹':['bao trên phải', 'trong'], '⿶':['bao dưới', 'trong'], '⿷':['bao trái', 'trong']}[s[0]];
+  return w ? s[1] + ' (' + w[0] + ') + ' + s[2] + ' (' + w[1] + ')' : ''; }
+function boLabel(r, c){ const n = boName(r, c); return n[0] ? 'Bộ ' + n[0] + (n[1] ? ' (' + n[1] + ')' : '') : 'Bộ ' + r; }
+function boConf(r){ const g = BO_LOOK.find(s => s.indexOf(r) >= 0); return g ? g.split('').filter(x => x !== r) : []; }
+function pickW(list, w){ const tot = list.reduce((a, x) => a + w(x), 0); let v = Math.random() * tot; for (const x of list) { v -= w(x); if (v <= 0) return x; } return list[list.length - 1]; }
+function boGen(cfg){
+  const L = Bo.learned(), fam = Bo.families(L), chars = Array.from(L.values());
+  if (!chars.length) return () => null;
+  const kinds = ['b1', 'b2', 'b3', 'b4', 'b5'], pk = META().pk || {}, wk = k => { const r = pk[k]; if (!r || r[0] < 5) return 1; return 0.6 + 1.6 * (1 - r[1] / r[0]); };
+  const recent = [];
+  const pickChar = filter => { const pool = chars.filter(x => recent.indexOf(x.c) < 0 && Bo.of(x.c).r !== x.c && (!filter || filter(x))); if (!pool.length) return null; const x = pickW(pool, y => Bo.need(Bo.of(y.c).r) * (fam.get(Bo.of(y.c).r).length > 1 ? 1.3 : 1)); recent.push(x.c); if (recent.length > 8) recent.shift(); return x; };
+  const mk = (kind, x, extra) => Object.assign({sk:'b', kind:'bo', bo:kind, pk:kind, key:x.c, item:x.it, ch:x.c}, extra || {});
+  return function next(){
+    for (let t = 0; t < 30; t++){
+      const k = pickW(kinds, wk);
+      if (k === 'b1') { const x = pickChar(); if (x) return mk(k, x); }
+      if (k === 'b2') { const x = pickChar(y => chars.some(z => Bo.of(z.c).r !== Bo.of(y.c).r)); if (x) return mk(k, x); }
+      if (k === 'b3') { const x = pickChar(y => { const o = Bo.of(y.c); return o.t === 'h' && o.sem && BO_NAME[o.sem] && (V.byH[y.c] || y.it.chars.length <= 2); }); if (x) return mk(k, x); }
+      if (k === 'b4') { const x = pickChar(y => !!Bo.parts(y.c)); if (x) return mk(k, x); }
+      if (k === 'b5') { const x = pickChar(y => { const o = Bo.of(y.c); return o.t === 'h' && o.ph && Bo.of(o.ph) && Bo.of(o.ph).py && o.py; }); if (x) return mk(k, x); }
+    }
+    const x = pickChar() || chars[Math.floor(Math.random() * chars.length)]; return mk('b1', x);
+  };
+}
+/* khung giải thích sau mỗi câu: bộ, nghĩa, cấu tạo, và các chữ đã học cùng bộ */
+function boFamily(c){
+  const o = Bo.of(c); if (!o) return null; const r = o.r, fam = (Bo.families().get(r) || []).filter(x => x.c !== c);
+  const how = o.t === 'h' && o.sem ? 'Chữ hình thanh: ' + o.sem + ' chỉ nghĩa' + (BO_NAME[o.sem] ? ' (' + BO_NAME[o.sem][1] + ')' : '') + (o.ph ? ', ' + o.ph + (Bo.of(o.ph) && Bo.of(o.ph).py ? ' (' + Bo.of(o.ph).py + ')' : '') + ' gợi âm.' : '.')
+    : o.t === 'y' ? 'Chữ hội ý: ghép nghĩa các phần lại.' : o.t === 't' ? 'Chữ tượng hình: vẽ lại hình sự vật.' : '';
+  const it = V.byH[c];
+  return h('div', {class:'bofam'},
+    h('div', {class:'bohead'}, h('span', {class:'boglyph', lang:'zh-Hans'}, r), h('div', null, h('b', null, boLabel(r, c)), h('small', null, c + ' ' + (o.py || '') + (it ? ' · ' + it.m : '') + (boIds(o.ids) ? ' · ' + boIds(o.ids) : '')))),
+    how ? h('p', {class:'fine'}, how) : null,
+    fam.length ? h('div', null, h('p', {class:'fine'}, 'Chữ đã học cùng bộ (' + fam.length + '):'),
+      h('div', {class:'bochips', lang:'zh-Hans'}, fam.slice(0, 24).map(x => h('span', {class:'bochip', title:x.it.h + ' · ' + x.it.m}, h('b', null, x.c), h('small', null, (Bo.of(x.c).py || '')), h('small', {class:'mean'}, x.it.h === x.c ? x.it.m : x.it.h))))) : h('p', {class:'fine'}, 'Chưa học chữ nào khác cùng bộ này.'));
+}
+function exBo(ex, api){
+  const c = ex.ch, o = Bo.of(c), it = ex.item, L = Bo.learned(), chars = Array.from(L.values()), after = h('div');
+  let done = false, timer = null;
+  const finish = ok => {
+    if (done) return; done = true; Bo.mark(o.r, ok); api.count('b', ok);
+    after.append(h('p', {class:'verdict ' + (ok ? 'ok' : 'bad')}, ok ? 'Đúng' : 'Chưa đúng'), boFamily(c));
+    const go = () => { clearTimeout(timer); api.next(); }; after.appendChild(nextRow(go)); KEYS = {Enter:go, ' ':go};
+    if (ok && SET().auto) timer = setTimeout(go, 2600); after.addEventListener('pointerdown', () => clearTimeout(timer));
+  };
+  const word = () => h('p', {class:'muted'}, 'trong từ ', h('b', {lang:'zh-Hans'}, it.h), ' ' + it.p + ' · ' + it.m);
+  const big = (ch, px) => h('div', {class:'center'}, cellEl(ch, px || 120));
+  let prompt = null, body = null;
+  if (ex.bo === 'b1') {
+    /* chữ này thuộc bộ nào: nhiễu là các phần khác của chính chữ, bộ dễ nhầm và bộ khác đã học */
+    const comp = Array.from(o.ids).filter(x => BO_NAME[x] && x !== o.r);
+    const pool = Array.from(new Set(comp.concat(boConf(o.r)).concat(shuffle(Array.from(Bo.families().keys())))).values()).filter(x => x !== o.r && BO_NAME[x]);
+    const list = [o.r].concat(pool.slice(0, 3));
+    prompt = h('div', {class:'prompt'}, big(c), word(), h('p', {class:'ask'}, 'Chữ ' + c + ' thuộc bộ nào?'));
+    body = h('div', {class:'opts boopts'}); shuffle(list).forEach((r, i) => body.appendChild(h('button', {type:'button', class:'opt', onclick:e => { if (done) return; Array.from(body.children).forEach(b => { b.disabled = true; if (b.dataset.r === o.r) b.classList.add('right'); }); if (r !== o.r) e.currentTarget.classList.add('wrong'); body.classList.add('done'); finish(r === o.r); }, 'data-r':r},
+      h('span', {class:'k'}, i + 1), h('span', {class:'boglyph sm', lang:'zh-Hans'}, r), ' ' + boLabel(r, c))));
+  } else if (ex.bo === 'b2') {
+    /* chữ nào có bộ này */
+    const wrongs = shuffle(chars.filter(x => Bo.of(x.c).r !== o.r && Array.from(Bo.of(x.c).ids).indexOf(o.r) < 0 && x.c.indexOf(o.r) < 0));
+    const conf = boConf(o.r), near = wrongs.filter(x => conf.indexOf(Bo.of(x.c).r) >= 0);
+    const list = [c].concat(Array.from(new Set(near.concat(wrongs).map(x => x.c))).slice(0, 3));
+    prompt = h('div', {class:'prompt'}, h('div', {class:'center'}, h('span', {class:'boglyph big', lang:'zh-Hans'}, o.r)), h('p', {class:'ask'}, boLabel(o.r, c) + '. Chữ nào mang bộ này?'));
+    body = h('div', {class:'opts han'}); shuffle(list).forEach((x, i) => body.appendChild(h('button', {type:'button', class:'opt han', lang:'zh-Hans', 'data-c':x, onclick:e => { if (done) return; Array.from(body.children).forEach(b => { b.disabled = true; if (b.dataset.c === c) b.classList.add('right'); }); if (x !== c) e.currentTarget.classList.add('wrong'); body.classList.add('done'); finish(x === c); }}, h('span', {class:'k'}, i + 1), x)));
+  } else if (ex.bo === 'b3') {
+    /* đoán nghĩa nhờ bộ: nhiễu là nghĩa của chữ cùng âm hoặc cùng phần gợi âm */
+    const w = V.byH[c] && P('m')[c] ? V.byH[c] : it, sem = o.sem, plainPy = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const others = items().filter(x => x !== w && x.m !== w.m && P('m')[x.h]);
+    const sound = others.filter(x => x.chars.some(ch => { const q = Bo.of(ch); return q && (plainPy(q.py) === plainPy(o.py) || (o.ph && q.ph === o.ph)); }));
+    const list = [w].concat(Array.from(new Set(shuffle(sound).concat(shuffle(others)))).slice(0, 3));
+    const hint = h('p', {class:'fine', hidden:true}, 'Gợi ý: ' + sem + ' là ' + boLabel(sem, c).toLowerCase() + '.');
+    prompt = h('div', {class:'prompt'}, big(w.h.length === 1 ? c : w.h, w.h.length === 1 ? 120 : 90), h('p', {class:'muted'}, w.p), h('p', {class:'ask'}, 'Nhìn phần chỉ nghĩa ' + sem + ' trong chữ ' + c + '. Từ này nghĩa là gì?'), h('button', {type:'button', class:'btn small ghost', onclick:e => { hint.hidden = false; e.currentTarget.hidden = true; }}, 'Gợi ý'), hint);
+    body = h('div', {class:'opts'}); shuffle(list).forEach((x, i) => body.appendChild(h('button', {type:'button', class:'opt', 'data-h':x.h, onclick:e => { if (done) return; Array.from(body.children).forEach(b => { b.disabled = true; if (b.dataset.h === w.h) b.classList.add('right'); }); if (x !== w) e.currentTarget.classList.add('wrong'); body.classList.add('done'); finish(x === w); }}, h('span', {class:'k'}, i + 1), x.m)));
+  } else if (ex.bo === 'b4') {
+    /* ghép chữ: chọn hai phần theo đúng thứ tự (trái rồi phải, hoặc trên rồi dưới) */
+    const pt = Bo.parts(c), lr = pt.k === '⿰', need = [pt.a, pt.b], picked = [];
+    const pieces = new Set(need); boConf(pt.a).concat(boConf(pt.b)).forEach(x => pieces.add(x));
+    shuffle(chars).forEach(x => { const q = Bo.parts(x.c); if (q && pieces.size < 6) { pieces.add(q.k === pt.k ? q.a : q.b); if (pieces.size < 6) pieces.add(q.b); } });
+    const slot = [h('span', {class:'boslot'}, '?'), h('span', {class:'boslot'}, '?')];
+    const frame = h('div', {class:'boframe ' + (lr ? 'lr' : 'tb'), lang:'zh-Hans'}, slot);
+    const tray = h('div', {class:'botray', lang:'zh-Hans'});
+    Array.from(pieces).slice(0, 6).sort(() => Math.random() - 0.5).forEach(pc => tray.appendChild(h('button', {type:'button', class:'botile', onclick:e => {
+      if (done || picked.length >= 2) return; picked.push(pc); slot[picked.length - 1].textContent = pc; slot[picked.length - 1].classList.add('on'); e.currentTarget.disabled = true;
+      if (picked.length === 2) { const ok = picked[0] === need[0] && picked[1] === need[1]; slot.forEach((s, i) => s.classList.add(picked[i] === need[i] ? 'ok' : 'bad')); after.prepend(h('div', {class:'center'}, cellEl(c, 110))); finish(ok); }
+    }}, pc)));
+    const undo = h('button', {type:'button', class:'btn small ghost', onclick:() => { if (done || !picked.length) return; const pc = picked.pop(); slot[picked.length].textContent = '?'; slot[picked.length].classList.remove('on'); Array.from(tray.children).forEach(b => { if (b.textContent === pc) b.disabled = false; }); }}, 'Bỏ phần vừa chọn');
+    prompt = h('div', {class:'prompt'}, h('p', {class:'muted'}, 'Ghép chữ ' + (o.py || '') + ' trong từ ', h('b', null, it.p), ' · ' + it.m), h('p', {class:'ask'}, 'Chọn phần ' + (lr ? 'bên trái rồi phần bên phải' : 'bên trên rồi phần bên dưới') + '.'), frame);
+    body = h('div', null, tray, h('div', {class:'center'}, undo));
+  } else {
+    /* đọc âm nhờ phần gợi âm */
+    const ph = o.ph, po = Bo.of(ph), plainPy = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const pys = new Set([o.py]); const add = p => { if (p && !Array.from(pys).some(q => q === p) && pys.size < 4) pys.add(p); };
+    if (po.py !== o.py) add(po.py);
+    const sameR = shuffle(chars.filter(x => Bo.of(x.c).r === o.r && x.c !== c)); sameR.forEach(x => add(Bo.of(x.c).py));
+    shuffle(chars).forEach(x => add(Bo.of(x.c).py));
+    prompt = h('div', {class:'prompt'}, big(c), h('p', {class:'ask'}, 'Phần ' + ph + ' (' + po.py + ') gợi âm cho chữ này. Chữ ' + c + ' đọc là gì?'));
+    body = h('div', {class:'opts'}); shuffle(Array.from(pys)).forEach((p, i) => body.appendChild(h('button', {type:'button', class:'opt', 'data-p':p, onclick:e => { if (done) return; Array.from(body.children).forEach(b => { b.disabled = true; if (b.dataset.p === o.py) b.classList.add('right'); }); if (p !== o.py) e.currentTarget.classList.add('wrong'); body.classList.add('done'); finish(p === o.py); if (SET().snd) speak(c, 0.8); }}, h('span', {class:'k'}, i + 1), p)));
+    void plainPy;
+  }
+  KEYS = {}; Array.from(body.querySelectorAll('button.opt')).forEach((b, i) => { KEYS[String(i + 1)] = () => b.click(); });
+  return [prompt, body, after];
+}
+/* bảng các bộ đã gặp: xếp theo số chữ đã học */
+function boTable(){
+  const fam = Array.from(Bo.families().entries()).sort((a, b) => b[1].length - a[1].length), st = Bo.stat();
+  return h('div', {class:'botable'}, fam.map(([r, xs]) => { const a = st[r];
+    return h('details', {class:'borow'}, h('summary', null, h('span', {class:'boglyph sm', lang:'zh-Hans'}, r), h('span', null, boLabel(r, xs[0].c)), h('small', {class:'muted'}, xs.length + ' chữ' + (a ? ' · đúng ' + a[1] + '/' + a[0] : ''))),
+      h('div', {class:'bochips', lang:'zh-Hans'}, xs.map(x => h('span', {class:'bochip'}, h('b', null, x.c), h('small', null, Bo.of(x.c).py || ''), h('small', {class:'mean'}, x.it.h === x.c ? x.it.m : x.it.h))))); }));
+}
+
 
 /* ================= phiên học ================= */
 const Session = {
@@ -3679,8 +3902,8 @@ const Session = {
       count(sk, ok){ tally(sk, ok); if (S.n % 5 === 0) Store.flush(); },
       next(){ S.step(); }
     };
-    const R = {m1:exMCQ, l1:exMCQ, l2:exMCQ, m2:exFlip, p1:exTones, p2:exType, w:exWrite, intro:exIntro, ws:exFree, sv:exSent, sd:exSent, ord:exOrder}[ex.kind];
-    const label = {m1:'Mặt chữ', m2:'Mặt chữ', l1:'Nghe', l2:'Nghe', p1:'Pinyin', p2:'Pinyin', w:'Viết', intro:'Từ mới', ws:'Viết', ord:'Xếp câu'}[ex.kind];
+    const R = {m1:exMCQ, l1:exMCQ, l2:exMCQ, m2:exFlip, p1:exTones, p2:exType, w:exWrite, intro:exIntro, ws:exFree, sv:exSent, sd:exSent, ord:exOrder, bo:exBo}[ex.kind];
+    const label = {m1:'Mặt chữ', m2:'Mặt chữ', l1:'Nghe', l2:'Nghe', p1:'Pinyin', p2:'Pinyin', w:'Viết', intro:'Từ mới', ws:'Viết', ord:'Xếp câu', bo:'Bộ thủ'}[ex.kind];
     const body = R(ex, api), keys = KEYS;
     show('session', [
       h('div', {class:'sbar'}, h('span', {class:'pill'}, ex.phase || ''), h('span', {class:'muted'}, label), h('div', {class:'bar brush' + (FX.combo >= 5 ? ' gold' : ''), id:'sbar'}, h('i', {id:'sbarFill'})), h('span', {class:'pill combo', id:'sCombo', hidden:FX.combo < 2}, 'Mạch ' + FX.combo), h('span', {class:'num muted', id:'sbarTime'}), h('button', {type:'button', class:'btn ghost', onclick:() => S.finish()}, 'Dừng')),
@@ -3783,7 +4006,7 @@ async function boot(){
     show('err', [h('h1', null, 'Chưa mở được sổ'), h('p', {class:'muted'}, 'Không đọc được dữ liệu (' + ((e && (e.code || e.message)) || 'lỗi') + '). Tiến độ của anh không bị ghi đè. Kiểm tra mạng rồi thử lại.'), h('div', {class:'row'}, h('button', {type:'button', class:'btn primary big', onclick:() => { view().textContent = ''; view().appendChild(h('p', {class:'muted', id:'bootmsg'}, 'Đang mở sổ…')); boot(); }}, 'Thử lại'))]);
   }
 }
-window.__app = {FX, Ocr, Ck, viewCheck, paperAlign, viewBlitz, blitzPool, Session, exOrder, exMCQ, exType, exTones, exFlip, exIntro, exWrite, show, h, sentProgress, startSent, SENTS:() => SENTS, exSent, sentAlign, exTones, Cloud, Ink, exFree, practiceGen, readySents, SET, viewPractice, viewSettings, Store, V, Session, Strokes, Snd, segment, grade, stats, P, META, viewHome, viewPlacement, viewPlaceGroups, applyPlacement, items, newQueue, dueList, unplaced};
+window.__app = {FX, Ocr, Ck, viewCheck, Bo, boGen, paperAlign, viewBlitz, blitzPool, Session, exOrder, exMCQ, exType, exTones, exFlip, exIntro, exWrite, show, h, sentProgress, startSent, SENTS:() => SENTS, exSent, sentAlign, exTones, Cloud, Ink, exFree, practiceGen, readySents, SET, viewPractice, viewSettings, Store, V, Session, Strokes, Snd, segment, grade, stats, P, META, viewHome, viewPlacement, viewPlaceGroups, applyPlacement, items, newQueue, dueList, unplaced};
 boot();
 })();
 </script>
