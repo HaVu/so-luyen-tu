@@ -2683,7 +2683,7 @@ const Nhac = {
   dev(){ let d = ''; try { d = localStorage.getItem('sotu:dev') || ''; if (!d) { d = 'm' + Math.random().toString(36).slice(2, 10); localStorage.setItem('sotu:dev', d); } } catch (e) { d = 'm0'; } return d; },
   key(){ const s = VAPID_PUB.replace(/-/g, '+').replace(/_/g, '/'), b = atob(s + '='.repeat((4 - s.length % 4) % 4)); return Uint8Array.from(b, c => c.charCodeAt(0)); },
   ref(){ return window.SotuFB.doc(Cloud.fs, 'users', Cloud.user.uid, 'docs', 'nhac'); },
-  save(data){ return withTimeout(window.SotuFB.setDoc(this.ref(), data, {merge:true}), 15000); },
+  save(data){ try { data = Object.assign({xh:xhWho()}, data); } catch (e) {} return withTimeout(window.SotuFB.setDoc(this.ref(), data, {merge:true}), 15000); },
   cfg(){ return META().set.nhac || {}; },
   on(){ return !!this.cfg().on && localStorage.getItem('sotu:nhac') === '1'; },
   async enable(gio){
@@ -3077,7 +3077,7 @@ function xhApply(root){ const who = xhWho(); if (who === 'anh') return; xhNode(r
 function xhPanelRow(save){
   const cur = xhWho();
   return h('div', {class:'field'}, h('span', {style:'font-weight:600'}, 'App gọi người học là'),
-    h('div', {class:'row noxh'}, ['anh', 'chị', 'bạn', 'em'].map(v => h('button', {type:'button', class:'btn small', 'aria-pressed':String(cur === v), onclick:() => { save('xh', v); viewSettings(); }}, v[0].toUpperCase() + v.slice(1)))));
+    h('div', {class:'row noxh'}, ['anh', 'chị', 'bạn', 'em'].map(v => h('button', {type:'button', class:'btn small', 'aria-pressed':String(cur === v), onclick:() => { save('xh', v); try { if (Nhac.on() && Cloud.on && Cloud.user) Nhac.save({t:Date.now()}).catch(() => {}); } catch (e) {} viewSettings(); }}, v[0].toUpperCase() + v.slice(1)))));
 }
 
 /* thanh trượt: tô phần đã kéo (Chrome/Safari không tự tô) */
@@ -3349,14 +3349,16 @@ function viewCheck(){
       const n = cnt.ok + cnt.warn + cnt.bad;
       sumLine.className = 'verdict ' + (cnt.bad ? 'bad' : cnt.warn ? 'warn' : 'ok');
       sumLine.textContent = !R ? 'Câu bạn gõ: ' + n + ' chữ.' : cnt.bad + cnt.warn === 0 ? 'Đọc được ' + n + ' chữ, chữ nào cũng rõ và đủ nét.' : 'Đọc được ' + n + ' chữ: ' + cnt.ok + ' rõ' + (cnt.warn ? ', ' + cnt.warn + ' chưa chắc' : '') + (cnt.bad ? ', ' + cnt.bad + ' có thể thiếu nét' : '') + '. Bấm vào chữ màu để xem kỹ.';
-      pyLine.textContent = window.pinyinPro ? py.filter(x => x).join(' ').replace(/ ([，。！？、；：,.!?])/g, '$1') : '';
+      pyLine.textContent = window.pinyinPro ? py.filter(x => x).join(' ').replace(/ ([，。！？、；：,.!?])/g, '$1').replace(/([，。！？、；：])\s*/g, (m, c) => ({'，':', ', '。':'. ', '！':'! ', '？':'? ', '、':', ', '；':'; ', '：':': '})[c]).trim() : '';
       paintPic(); paintWords(); paintRef();
     };
     const paintWords = () => {
       words.textContent = ''; if (!Ck.dict) return;
-      const ws = Ck.seg(text()).words.filter(w => [...w].some(isHan));
+      const tx = text(), all = Ck.seg(tx).words, pyAll = window.pinyinPro ? Ck.pys(tx) : [], pyOf = {}; let off = 0;
+      all.forEach(w => { if (!(w in pyOf)) pyOf[w] = pyAll.slice(off, off + w.length).join(' '); off += w.length; });
+      const ws = all.filter(w => [...w].some(isHan));
       const miss = [];
-      ws.forEach(w => { const it = V.byH[w], py = window.pinyinPro ? Ck.pys(w).join(' ') : '', mEl = h('span', {class:'m mean'}, it ? it.m : '…');
+      ws.forEach(w => { const it = V.byH[w], py = pyOf[w] || '', mEl = h('span', {class:'m mean'}, it ? it.m : '…');
         if (!it) miss.push([w, mEl]);
         words.appendChild(h('div', {class:'ckw' + (it ? ' known' : '')}, h('span', {class:'h', lang:'zh-Hans'}, w), h('span', {class:'p'}, py), mEl, it && P('m')[it.h] ? h('span', {class:'tagd'}, 'đã học') : null)); });
       if (miss.length) Ck.gloss(Array.from(new Set(miss.map(x => x[0])))).then(() => miss.forEach(([w, el]) => { const g = Ck.trCache[w]; el.textContent = g || '—'; if (g) el.classList.add('mt'); }));

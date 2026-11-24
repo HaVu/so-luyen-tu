@@ -13,9 +13,10 @@ function local(tz){
   const g = t => f.find(p => p.type === t).value; return {day:g('year') + '-' + g('month') + '-' + g('day'), hour:+g('hour')};
 }
 function body(x){
-  const n = x.chuoi || 0;
-  if (n >= 2) return 'Anh đang giữ chuỗi ' + n + ' ngày học liền. Hôm nay chưa học, vào ôn vài phút cho khỏi đứt chuỗi nhé.';
-  return 'Hôm nay anh chưa học. Vào ôn vài phút cho từ khỏi quên nhé.';
+  /* xưng hô theo cài đặt trong app (anh, chị, bạn, em); chưa có thì gọi là bạn */
+  const n = x.chuoi || 0, w = ['anh', 'chị', 'bạn', 'em'].indexOf(x.xh) >= 0 ? x.xh : 'bạn', W = w[0].toUpperCase() + w.slice(1);
+  if (n >= 2) return W + ' đang giữ chuỗi ' + n + ' ngày học liền. Hôm nay chưa học, vào ôn vài phút cho khỏi đứt chuỗi nhé.';
+  return 'Hôm nay ' + w + ' chưa học. Vào ôn vài phút cho từ khỏi quên nhé.';
 }
 (async () => {
   let sent = 0, skip = 0;
