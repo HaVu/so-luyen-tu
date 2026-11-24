@@ -1620,7 +1620,9 @@ async function loadSents(){
 function isNameWord(t){ const it = V.byH[t]; return !!(it && it.g === 'Tên riêng'); }
 function applyNames(){ const on = SET().names; SENTS = on ? SENTS_ALL.slice() : SENTS_ALL.filter(x => !x.t.some(isNameWord)); }
 function learnedChar(c){ return (V.charWords[c] || []).some(it => P('m')[it.h]); }
-function readySents(){ return SENTS.filter(s => hanChars(s.h).every(learnedChar)); }
+/* một từ trong câu coi là "đã biết" khi: là từ trong sổ thì phải đã học từ đó; không có trong sổ (cụm ghép, từ chức năng) thì mọi chữ phải đã gặp */
+function knownTok(t){ const hz = hanChars(t); if (!hz.length) return true; const it = V.byH[t]; if (it && enabled(it)) return !!P('m')[t]; return hz.every(learnedChar); }
+function readySents(){ return SENTS.filter(s => s.t.every(knownTok)); }
 function speak(text, rate){
   if (!Snd.tts) return;
   try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'zh-CN'; u.rate = rate || 0.85; speechSynthesis.speak(u); } catch (e) {}
@@ -2711,9 +2713,10 @@ function blitzGen(cfg, S){
   const pickSent = () => {
     let best = null, bs = 0;
     SENTS.forEach(x => {
-      if (sentUsed.has(x.h)) return; let b = 0, u = 0;
-      x.t.forEach(t => { if (bset.has(t)) { if (st[t].seen && st[t].lv >= 3) b++; else u++; } else if (!(V.byH[t] && P('m')[t])) u += 0.5; });
-      const sc = b * 3 - u; if (b && sc > bs) { bs = sc; best = x; }
+      /* chỉ lấy câu mà mọi từ đều đã biết: từ của đợt này đã được dạy, còn lại là từ đã học từ trước. Câu có từ chưa học thì bỏ hẳn */
+      if (sentUsed.has(x.h)) return; let b = 0, bad = false;
+      x.t.forEach(t => { if (bad) return; if (bset.has(t)) { if (st[t].seen && st[t].lv >= 2) b++; else bad = true; } else if (!knownTok(t)) bad = true; });
+      if (bad || !b) return; const sc = b * 3 - Math.max(0, x.t.length - 8) * 0.5; if (sc > bs) { bs = sc; best = x; }
     });
     if (best) sentUsed.add(best.h); return best;
   };
