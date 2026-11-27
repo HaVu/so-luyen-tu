@@ -1986,7 +1986,12 @@ function sentAlign(cells, exp, data, size, strict){
     else if (Math.abs(d.medians.length - c.strokes.length) <= Math.max(3, Math.round(d.medians.length * 0.5))) g = Ink.gradeMe(c.strokes, d, size, strict, SET().ord === 'hinh', ch);
     return (memo[key] = g);
   }));
-  const sc = (i, j) => { const g = G[i][j]; return !g || g.rating === 1 ? -0.6 : (g.rating === 3 ? 2 : 1.4); };
+  /* điểm ghép ô i với chữ mẫu j. Ô chấm "chưa đúng" vẫn được điểm theo độ giống (cost): chữ đúng viết ẩu thường lệch 100 đến 155,
+     chữ khác hẳn thường 180 trở lên. Nhờ vậy khi anh bỏ sót một chữ, chỗ trống được đặt đúng chữ bị sót,
+     thay vì đẩy cả dãy chữ sau lệch đi một ô (27/11: viết 公 bị so với 司 vì cả hai cách ghép đều "chưa đúng" như nhau). */
+  const sc = (i, j) => { const g = G[i][j]; if (!g) return -0.9; const c = g.cost || 0;
+    if (g.rating === 3) return 2 - Math.min(c, 300) / 3000; if (g.rating === 2) return 1.4 - Math.min(c, 300) / 3000;
+    return -0.6 + 0.55 * Math.max(0, Math.min(1, (200 - c) / 90)); };
   const dp = [], bt = [];
   for (let i = 0; i <= K; i++){ dp.push(new Array(N + 1).fill(0)); bt.push(new Array(N + 1).fill(0)); }
   for (let i = 1; i <= K; i++){ dp[i][0] = -i; bt[i][0] = 1; }
@@ -2007,7 +2012,8 @@ function sentAlign(cells, exp, data, size, strict){
   /* ô chưa khớp mà lại đúng là một chữ mẫu đang trống: viết đúng chữ nhưng sai vị trí */
   ops.filter(o => o.st === 'extra' || o.st === 'wrong').forEach(o => {
     let bj = -1, bg = null;
-    ops.forEach(q => { if ((q.st === 'miss' || q.st === 'wrong') && q !== o && !q.taken){ const g = G[o.i][q.j]; if (g && g.rating >= 2 && (!bg || g.cost < bg.cost)) { bg = g; bj = q.j; } } });
+    const own = o.j >= 0 ? G[o.i][o.j] : null; /* ô đang ở đúng chỗ một chữ mẫu: chỉ coi là chữ khác viết sai chỗ khi giống chữ kia rõ hơn hẳn */
+    ops.forEach(q => { if ((q.st === 'miss' || q.st === 'wrong') && q !== o && !q.taken){ const g = G[o.i][q.j]; if (g && g.rating >= 2 && (!own || g.rating === 3 || g.cost + 35 < own.cost) && (!bg || g.cost < bg.cost)) { bg = g; bj = q.j; } } });
     if (bj >= 0){ const q = ops.find(x => x.j === bj && (x.st === 'miss' || x.st === 'wrong')); q.taken = true; o.movedTo = bj; o.mg = bg; }
   });
   ops.forEach(o => { if ((o.st === 'extra' || o.st === 'wrong') && o.movedTo == null){ const r = Ink.read(cells[o.i].strokes, size); if (r) o.read = r.ch; } });
